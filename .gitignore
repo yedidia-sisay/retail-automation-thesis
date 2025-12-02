@@ -1,0 +1,20 @@
+
+# Cherry project files
+cherry*
+cherry.yaml
+
+# Dummy files
+dummy*
+test_dummy*
+*dummy_*
+*_dummy.*
+
+# Python
+__pycache__/
+
+# Virtual environments
+.env
+.venv
+venv/
+ENV/
+env/
