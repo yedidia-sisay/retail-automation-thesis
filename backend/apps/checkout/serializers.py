@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from apps.checkout.models import CheckoutItem, CheckoutSession
+from apps.checkout.models import CheckoutCorrection, CheckoutItem, CheckoutSession
 
 
 class CheckoutItemSerializer(serializers.ModelSerializer):
@@ -24,8 +24,10 @@ class CheckoutItemSerializer(serializers.ModelSerializer):
             "quantity",
             "unit_price",
             "subtotal",
+            "confidence",
             "source",
             "status",
+            "review_status",
             "note",
             "created_at",
             "updated_at",
@@ -84,3 +86,52 @@ class AddBarcodeItemSerializer(serializers.Serializer):
         required=False,
         default=Decimal("1.000"),
     )
+
+
+class AcceptCheckoutItemSerializer(serializers.Serializer):
+    note = serializers.CharField(required=False, allow_blank=True)
+
+
+class RejectCheckoutItemSerializer(serializers.Serializer):
+    note = serializers.CharField(required=False, allow_blank=True)
+
+
+class ReplaceCheckoutItemProductSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+    quantity = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        min_value=Decimal("0.001"),
+        required=False,
+    )
+    note = serializers.CharField(required=False, allow_blank=True)
+
+
+class ChangeCheckoutItemQuantitySerializer(serializers.Serializer):
+    quantity = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        min_value=Decimal("0.001"),
+    )
+    note = serializers.CharField(required=False, allow_blank=True)
+
+
+class CheckoutCorrectionSerializer(serializers.ModelSerializer):
+    corrected_by_username = serializers.CharField(
+        source="corrected_by.username", read_only=True
+    )
+
+    class Meta:
+        model = CheckoutCorrection
+        fields = (
+            "id",
+            "checkout_session",
+            "checkout_item",
+            "correction_type",
+            "before_data",
+            "after_data",
+            "corrected_by",
+            "corrected_by_username",
+            "note",
+            "created_at",
+        )

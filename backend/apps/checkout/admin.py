@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.checkout.models import CheckoutItem, CheckoutSession
+from apps.checkout.models import CheckoutCorrection, CheckoutItem, CheckoutSession
 
 
 class CheckoutItemInline(admin.TabularInline):
@@ -11,8 +11,10 @@ class CheckoutItemInline(admin.TabularInline):
 		"quantity",
 		"unit_price",
 		"subtotal",
+		"confidence",
 		"source",
 		"status",
+		"review_status",
 		"note",
 		"created_at",
 	)
@@ -53,10 +55,36 @@ class CheckoutItemAdmin(admin.ModelAdmin):
 		"quantity",
 		"unit_price",
 		"subtotal",
+		"confidence",
 		"source",
 		"status",
+		"review_status",
 		"created_at",
 	)
-	list_filter = ("source", "status", "created_at")
+	list_filter = ("source", "status", "review_status", "created_at")
 	search_fields = ("product__name", "product__sku", "=checkout_session__id")
 	readonly_fields = ("subtotal", "created_at", "updated_at")
+
+
+@admin.register(CheckoutCorrection)
+class CheckoutCorrectionAdmin(admin.ModelAdmin):
+	list_display = (
+		"id",
+		"checkout_session",
+		"checkout_item",
+		"correction_type",
+		"corrected_by",
+		"created_at",
+	)
+	list_filter = ("correction_type", "created_at")
+	search_fields = ("=checkout_session__id", "=checkout_item__id", "corrected_by__username")
+	readonly_fields = (
+		"checkout_session",
+		"checkout_item",
+		"corrected_by",
+		"correction_type",
+		"before_data",
+		"after_data",
+		"note",
+		"created_at",
+	)

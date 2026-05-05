@@ -75,8 +75,16 @@ class CheckoutItem(models.Model):
 		BARCODE = "BARCODE", "Barcode"
 		WEIGHTED = "WEIGHTED", "Weighted"
 
+	class ReviewStatus(models.TextChoices):
+		NOT_REQUIRED = "NOT_REQUIRED", "Not required"
+		NEEDS_REVIEW = "NEEDS_REVIEW", "Needs review"
+		ACCEPTED = "ACCEPTED", "Accepted"
+		REJECTED = "REJECTED", "Rejected"
+		REPLACED = "REPLACED", "Replaced"
+
 	class Status(models.TextChoices):
 		ACTIVE = "ACTIVE", "Active"
+		NEEDS_REVIEW = "NEEDS_REVIEW", "Needs review"
 		REMOVED = "REMOVED", "Removed"
 
 	checkout_session = models.ForeignKey(
@@ -96,6 +104,13 @@ class CheckoutItem(models.Model):
 	)
 	unit_price = models.DecimalField(max_digits=12, decimal_places=2)
 	subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+	confidence = models.DecimalField(
+		max_digits=5,
+		decimal_places=4,
+		null=True,
+		blank=True,
+		help_text="Optional confidence score for VISION items (0..1).",
+	)
 	source = models.CharField(
 		max_length=20,
 		choices=Source.choices,
@@ -105,6 +120,11 @@ class CheckoutItem(models.Model):
 		max_length=20,
 		choices=Status.choices,
 		default=Status.ACTIVE,
+	)
+	review_status = models.CharField(
+		max_length=20,
+		choices=ReviewStatus.choices,
+		default=ReviewStatus.NOT_REQUIRED,
 	)
 	note = models.TextField(blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
@@ -127,3 +147,46 @@ class CheckoutItem(models.Model):
 	def save(self, *args, **kwargs):
 		self.subtotal = self.calculate_subtotal()
 		return super().save(*args, **kwargs)
+
+
+class CheckoutCorrection(models.Model):
+	class CorrectionType(models.TextChoices):
+		ACCEPT_ITEM = "ACCEPT_ITEM", "Accept item"
+		REJECT_ITEM = "REJECT_ITEM", "Reject item"
+		REPLACE_PRODUCT = "REPLACE_PRODUCT", "Replace product"
+		CHANGE_QUANTITY = "CHANGE_QUANTITY", "Change quantity"
+
+	checkout_session = models.ForeignKey(
+		CheckoutSession,
+		on_delete=models.CASCADE,
+		related_name="corrections",
+	)
+	checkout_item = models.ForeignKey(
+		CheckoutItem,
+		on_delete=models.SET_NULL,
+		related_name="corrections",
+		null=True,
+		blank=True,
+	)
+	corrected_by = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		on_delete=models.SET_NULL,
+		related_name="checkout_corrections",
+		null=True,
+		blank=True,
+	)
+	correction_type = models.CharField(max_length=32, choices=CorrectionType.choices)
+	before_data = models.JSONField(default=dict, blank=True)
+	after_data = models.JSONField(default=dict, blank=True)
+	note = models.TextField(blank=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ("-created_at",)
+		indexes = [
+			models.Index(fields=["checkout_session", "created_at"]),
+			models.Index(fields=["correction_type", "created_at"]),
+		]
+
+	def __str__(self) -> str:
+		return f"Correction #{self.pk} ({self.correction_type})"

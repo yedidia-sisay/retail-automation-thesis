@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from apps.catalog.models import Product, ProductBarcode
+from decimal import Decimal
+
+from apps.catalog.models import DetectionClassMapping, Product, ProductBarcode
 
 
 def find_product_by_barcode(barcode: str | None) -> Product | None:
@@ -27,3 +29,24 @@ def find_product_by_barcode(barcode: str | None) -> Product | None:
 		return product
 
 	return None
+
+
+def get_product_for_detection_class(class_name: str) -> tuple[Product, Decimal] | None:
+	class_name_value = (class_name or "").strip()
+	if not class_name_value:
+		return None
+
+	mapping = (
+		DetectionClassMapping.objects.select_related("product")
+		.filter(
+			class_name=class_name_value,
+			is_active=True,
+			product__is_active=True,
+		)
+		.only("product", "minimum_confidence")
+		.first()
+	)
+	if mapping is None:
+		return None
+
+	return (mapping.product, mapping.minimum_confidence)

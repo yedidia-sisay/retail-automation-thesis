@@ -7,20 +7,29 @@ from rest_framework.views import APIView
 
 from apps.checkout.models import CheckoutItem, CheckoutSession
 from apps.checkout.serializers import (
+	AcceptCheckoutItemSerializer,
 	AddManualItemSerializer,
 	AddBarcodeItemSerializer,
+	ChangeCheckoutItemQuantitySerializer,
+	CheckoutCorrectionSerializer,
 	CheckoutItemSerializer,
 	CheckoutSessionSerializer,
 	CreateCheckoutSessionSerializer,
+	RejectCheckoutItemSerializer,
+	ReplaceCheckoutItemProductSerializer,
 	UpdateItemQuantitySerializer,
 )
 from apps.checkout.services import (
 	CheckoutError,
+	accept_checkout_item,
 	add_manual_item,
 	add_barcode_item_to_checkout,
+	change_checkout_item_quantity,
 	cancel_checkout_session,
 	create_checkout_session,
+	reject_checkout_item,
 	remove_item,
+	replace_checkout_item_product,
 	update_item_quantity,
 )
 from apps.receipts.serializers import ReceiptSerializer
@@ -74,9 +83,21 @@ class CheckoutSessionViewSet(viewsets.ModelViewSet):
 		try:
 			receipt = create_receipt_from_checkout(session)
 		except ValidationError as exc:
+			if isinstance(exc.detail, dict):
+				return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
 			return Response({"detail": exc.detail}, status=status.HTTP_400_BAD_REQUEST)
 
 		out = ReceiptSerializer(receipt, context=self.get_serializer_context())
+		return Response(out.data, status=status.HTTP_200_OK)
+
+	@action(detail=True, methods=["get"], url_path="corrections")
+	def corrections(self, request, pk=None):
+		session = self.get_object()
+		qs = (
+			session.corrections.select_related("checkout_item", "corrected_by")
+			.order_by("-created_at")
+		)
+		out = CheckoutCorrectionSerializer(qs, many=True, context=self.get_serializer_context())
 		return Response(out.data, status=status.HTTP_200_OK)
 
 	@action(detail=True, methods=["post"], url_path="cancel")
@@ -105,7 +126,86 @@ class CheckoutItemViewSet(viewsets.ReadOnlyModelViewSet):
 		serializer.is_valid(raise_exception=True)
 
 		try:
-			item = update_item_quantity(item=item, quantity=serializer.validated_data["quantity"])
+			item = update_item_quantity(
+				item=item,
+				quantity=serializer.validated_data["quantity"],
+				user=request.user if getattr(request.user, "is_authenticated", False) else None,
+			)
+		except CheckoutError as exc:
+			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+		out = CheckoutItemSerializer(item, context=self.get_serializer_context())
+		return Response(out.data, status=status.HTTP_200_OK)
+
+	@action(detail=True, methods=["patch"], url_path="change-quantity")
+	def change_quantity(self, request, pk=None):
+		item = self.get_object()
+		serializer = ChangeCheckoutItemQuantitySerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+
+		try:
+			item = change_checkout_item_quantity(
+				item_id=item.id,
+				quantity=serializer.validated_data["quantity"],
+				user=request.user if getattr(request.user, "is_authenticated", False) else None,
+				note=serializer.validated_data.get("note", ""),
+			)
+		except CheckoutError as exc:
+			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+		out = CheckoutItemSerializer(item, context=self.get_serializer_context())
+		return Response(out.data, status=status.HTTP_200_OK)
+
+	@action(detail=True, methods=["post"], url_path="accept")
+	def accept(self, request, pk=None):
+		item = self.get_object()
+		serializer = AcceptCheckoutItemSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+
+		try:
+			item = accept_checkout_item(
+				item_id=item.id,
+				user=request.user if getattr(request.user, "is_authenticated", False) else None,
+				note=serializer.validated_data.get("note", ""),
+			)
+		except CheckoutError as exc:
+			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+		out = CheckoutItemSerializer(item, context=self.get_serializer_context())
+		return Response(out.data, status=status.HTTP_200_OK)
+
+	@action(detail=True, methods=["post"], url_path="reject")
+	def reject(self, request, pk=None):
+		item = self.get_object()
+		serializer = RejectCheckoutItemSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+
+		try:
+			item = reject_checkout_item(
+				item_id=item.id,
+				user=request.user if getattr(request.user, "is_authenticated", False) else None,
+				note=serializer.validated_data.get("note", ""),
+			)
+		except CheckoutError as exc:
+			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+		out = CheckoutItemSerializer(item, context=self.get_serializer_context())
+		return Response(out.data, status=status.HTTP_200_OK)
+
+	@action(detail=True, methods=["post"], url_path="replace-product")
+	def replace_product(self, request, pk=None):
+		item = self.get_object()
+		serializer = ReplaceCheckoutItemProductSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+
+		try:
+			item = replace_checkout_item_product(
+				item_id=item.id,
+				product_id=serializer.validated_data["product_id"],
+				quantity=serializer.validated_data.get("quantity"),
+				user=request.user if getattr(request.user, "is_authenticated", False) else None,
+				note=serializer.validated_data.get("note", ""),
+			)
 		except CheckoutError as exc:
 			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -132,6 +232,8 @@ class ConfirmCheckoutAPIView(APIView):
 		try:
 			receipt = create_receipt_from_checkout(session)
 		except ValidationError as exc:
+			if isinstance(exc.detail, dict):
+				return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
 			return Response({"detail": exc.detail}, status=status.HTTP_400_BAD_REQUEST)
 		except CheckoutError as exc:
 			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

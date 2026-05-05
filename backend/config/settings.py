@@ -113,6 +113,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Vision / YOLO settings
+USE_MOCK_YOLO = config("USE_MOCK_YOLO", default=True, cast=bool)
+YOLO_MODEL_PATH = config("YOLO_MODEL_PATH", default="")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = config(

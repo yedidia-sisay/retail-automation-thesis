@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.checkout.models import CheckoutItem, CheckoutSession
+from apps.checkout.services import recalculate_checkout_totals, validate_checkout_can_be_confirmed
 from apps.receipts.models import Receipt, ReceiptLine
 
 
@@ -38,25 +39,29 @@ def create_receipt_from_checkout(checkout_session: CheckoutSession) -> Receipt:
 
 		active_items = list(
 			CheckoutItem.objects.select_related("product")
-			.filter(checkout_session=session, status=CheckoutItem.Status.ACTIVE)
+			.filter(
+				checkout_session=session,
+				status__in=[CheckoutItem.Status.ACTIVE, CheckoutItem.Status.NEEDS_REVIEW],
+			)
+			.exclude(status=CheckoutItem.Status.REMOVED)
+			.exclude(review_status=CheckoutItem.ReviewStatus.REJECTED)
 			.order_by("id")
 		)
+
+		validate_checkout_can_be_confirmed(session)
 		if not active_items:
-			raise ValidationError("Cannot confirm an empty checkout session.")
+			raise ValidationError({"detail": "Cannot confirm an empty checkout session."})
 
 		total = sum((item.subtotal for item in active_items), Decimal("0.00")).quantize(
 			Decimal("0.01")
 		)
 
 		now = timezone.now()
-		session.subtotal = total
-		session.total_amount = total
+		session = recalculate_checkout_totals(session)
 		session.status = CheckoutSession.Status.CONFIRMED
 		if session.confirmed_at is None:
 			session.confirmed_at = now
-		session.save(
-			update_fields=["subtotal", "total_amount", "status", "confirmed_at", "updated_at"]
-		)
+		session.save(update_fields=["status", "confirmed_at", "updated_at", "subtotal", "total_amount"])
 
 		receipt = Receipt.objects.create(
 			checkout_session=session,
