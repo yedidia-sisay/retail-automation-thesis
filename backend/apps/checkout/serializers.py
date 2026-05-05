@@ -73,3 +73,14 @@ class UpdateItemQuantitySerializer(serializers.Serializer):
         decimal_places=3,
         min_value=Decimal("0.001"),
     )
+
+
+class AddBarcodeItemSerializer(serializers.Serializer):
+    barcode = serializers.CharField(allow_blank=False)
+    quantity = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        min_value=Decimal("0.001"),
+        required=False,
+        default=Decimal("1.000"),
+    )

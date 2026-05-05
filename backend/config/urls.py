@@ -30,6 +30,7 @@ def api_root(request):
         "endpoints": {
             "catalog": "/api/catalog/",
 			"checkout": "/api/checkout/",
+			"receipts": "/api/receipts/",
             "auth": "/api/auth/",
             "admin": "/admin/",
         },
@@ -42,6 +43,7 @@ urlpatterns = [
     path("api/auth/", include("rest_framework.urls")),
     path("api/catalog/", include("apps.catalog.urls")),
 	path("api/checkout/", include("apps.checkout.urls")),
+	path("api/receipts/", include("apps.receipts.urls")),
 ]
 
 if settings.DEBUG:

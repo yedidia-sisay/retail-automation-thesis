@@ -3,9 +3,12 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.db import transaction
+from rest_framework.exceptions import NotFound, ValidationError
 
 from apps.catalog.models import Product
+from apps.catalog.selectors import find_product_by_barcode
 from apps.checkout.models import CheckoutItem, CheckoutSession
+from apps.audit.services import log_audit_event
 
 
 class CheckoutError(Exception):
@@ -141,3 +144,82 @@ def cancel_checkout_session(session: CheckoutSession) -> CheckoutSession:
 
         session.cancel()
         return session
+
+
+def add_barcode_item_to_checkout(
+    session: CheckoutSession,
+    barcode: str,
+    quantity: Decimal | None = None,
+    user=None,
+) -> CheckoutSession:
+    barcode_value = (barcode or "").strip()
+    if not barcode_value:
+        raise ValidationError("Barcode cannot be blank.")
+
+    product = find_product_by_barcode(barcode_value)
+
+    if quantity is None:
+        quantity = Decimal("1.000")
+    if quantity <= 0:
+        raise ValidationError("Quantity must be greater than 0.")
+
+    with transaction.atomic():
+        session = CheckoutSession.objects.select_for_update().get(pk=session.pk)
+        ensure_session_is_editable(session)
+        if product is None:
+            # Log outside this transaction so it isn't rolled back.
+            pass
+        else:
+            existing_item = (
+                CheckoutItem.objects.select_for_update()
+                .filter(
+                    checkout_session=session,
+                    product=product,
+                    status=CheckoutItem.Status.ACTIVE,
+                    source=CheckoutItem.Source.BARCODE,
+                )
+                .first()
+            )
+
+            quantity = quantity.quantize(Decimal("0.001"))
+            if existing_item is not None:
+                existing_item.quantity = (existing_item.quantity + quantity).quantize(
+                    Decimal("0.001")
+                )
+                existing_item.save(update_fields=["quantity", "subtotal", "updated_at"])
+            else:
+                CheckoutItem.objects.create(
+                    checkout_session=session,
+                    product=product,
+                    quantity=quantity,
+                    unit_price=product.current_price,
+                    source=CheckoutItem.Source.BARCODE,
+                    status=CheckoutItem.Status.ACTIVE,
+                )
+
+            recalculate_checkout_totals(session)
+
+    if product is None:
+        log_audit_event(
+            user=user,
+            checkout_session=session,
+            event_type="BARCODE_FALLBACK_UNKNOWN",
+            description="Unknown barcode scanned during checkout.",
+            metadata={"barcode": barcode_value},
+        )
+        raise NotFound("No active product found for this barcode.")
+
+    log_audit_event(
+        user=user,
+        checkout_session=session,
+        event_type="BARCODE_FALLBACK_SUCCESS",
+        description="Product added using barcode fallback.",
+        metadata={
+            "barcode": barcode_value,
+            "product_id": product.id,
+            "product_name": product.name,
+            "quantity": str(quantity.quantize(Decimal("0.001"))),
+        },
+    )
+
+    return session

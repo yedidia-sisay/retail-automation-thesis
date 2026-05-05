@@ -1,11 +1,14 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.checkout.models import CheckoutItem, CheckoutSession
 from apps.checkout.serializers import (
 	AddManualItemSerializer,
+	AddBarcodeItemSerializer,
 	CheckoutItemSerializer,
 	CheckoutSessionSerializer,
 	CreateCheckoutSessionSerializer,
@@ -14,12 +17,16 @@ from apps.checkout.serializers import (
 from apps.checkout.services import (
 	CheckoutError,
 	add_manual_item,
+	add_barcode_item_to_checkout,
 	cancel_checkout_session,
-	confirm_checkout_session,
 	create_checkout_session,
 	remove_item,
 	update_item_quantity,
 )
+from apps.receipts.serializers import ReceiptSerializer
+from apps.receipts.services import create_receipt_from_checkout
+from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound
 
 
 class CheckoutSessionViewSet(viewsets.ModelViewSet):
@@ -65,11 +72,11 @@ class CheckoutSessionViewSet(viewsets.ModelViewSet):
 	def confirm(self, request, pk=None):
 		session = self.get_object()
 		try:
-			session = confirm_checkout_session(session)
-		except CheckoutError as exc:
-			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+			receipt = create_receipt_from_checkout(session)
+		except ValidationError as exc:
+			return Response({"detail": exc.detail}, status=status.HTTP_400_BAD_REQUEST)
 
-		out = CheckoutSessionSerializer(session, context=self.get_serializer_context())
+		out = ReceiptSerializer(receipt, context=self.get_serializer_context())
 		return Response(out.data, status=status.HTTP_200_OK)
 
 	@action(detail=True, methods=["post"], url_path="cancel")
@@ -114,4 +121,57 @@ class CheckoutItemViewSet(viewsets.ReadOnlyModelViewSet):
 			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
 		out = CheckoutItemSerializer(item, context=self.get_serializer_context())
+		return Response(out.data, status=status.HTTP_200_OK)
+
+
+class ConfirmCheckoutAPIView(APIView):
+	permission_classes = [AllowAny]
+
+	def post(self, request, session_id: int):
+		session = get_object_or_404(CheckoutSession, pk=session_id)
+		try:
+			receipt = create_receipt_from_checkout(session)
+		except ValidationError as exc:
+			return Response({"detail": exc.detail}, status=status.HTTP_400_BAD_REQUEST)
+		except CheckoutError as exc:
+			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+		out = ReceiptSerializer(receipt)
+		return Response(out.data, status=status.HTTP_200_OK)
+
+
+class AddBarcodeItemAPIView(APIView):
+	permission_classes = [AllowAny]
+
+	def post(self, request, session_id: int):
+		session = get_object_or_404(CheckoutSession, pk=session_id)
+		if not session.is_editable:
+			return Response(
+				{"detail": "Cannot add items to a confirmed or cancelled checkout session."},
+				status=status.HTTP_400_BAD_REQUEST,
+			)
+
+		serializer = AddBarcodeItemSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+
+		try:
+			session = add_barcode_item_to_checkout(
+				session=session,
+				barcode=serializer.validated_data["barcode"],
+				quantity=serializer.validated_data.get("quantity"),
+				user=request.user if getattr(request.user, "is_authenticated", False) else None,
+			)
+		except NotFound as exc:
+			return Response({"detail": str(exc.detail)}, status=status.HTTP_404_NOT_FOUND)
+		except ValidationError as exc:
+			return Response({"detail": exc.detail}, status=status.HTTP_400_BAD_REQUEST)
+		except CheckoutError as exc:
+			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+		session = (
+			CheckoutSession.objects.select_related("cashier")
+			.prefetch_related("items", "items__product")
+			.get(pk=session.pk)
+		)
+		out = CheckoutSessionSerializer(session)
 		return Response(out.data, status=status.HTTP_200_OK)
