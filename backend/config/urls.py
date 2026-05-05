@@ -27,6 +27,12 @@ def api_root(request):
         "message": "Retail Checkout Automation Backend API",
         "status": "running",
         "version": "0.1.0",
+        "endpoints": {
+            "catalog": "/api/catalog/",
+			"checkout": "/api/checkout/",
+            "auth": "/api/auth/",
+            "admin": "/admin/",
+        },
     })
 
 
@@ -34,6 +40,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", api_root, name="api-root"),
     path("api/auth/", include("rest_framework.urls")),
+    path("api/catalog/", include("apps.catalog.urls")),
+	path("api/checkout/", include("apps.checkout.urls")),
 ]
 
 if settings.DEBUG:
