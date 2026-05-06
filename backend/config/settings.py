@@ -117,6 +117,14 @@ MEDIA_ROOT = BASE_DIR / "media"
 USE_MOCK_YOLO = config("USE_MOCK_YOLO", default=True, cast=bool)
 YOLO_MODEL_PATH = config("YOLO_MODEL_PATH", default="")
 
+# ERP / Odoo adapter settings
+# Keep FAKE as the default so tests and local development do not depend on Odoo.
+ERP_CLIENT_MODE = config("ERP_CLIENT_MODE", default="FAKE")
+ODOO_URL = config("ODOO_URL", default="")
+ODOO_DB = config("ODOO_DB", default="")
+ODOO_USERNAME = config("ODOO_USERNAME", default="")
+ODOO_PASSWORD = config("ODOO_PASSWORD", default="")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = config(

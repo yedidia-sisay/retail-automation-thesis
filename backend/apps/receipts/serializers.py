@@ -34,6 +34,9 @@ class ReceiptSerializer(serializers.ModelSerializer):
 			"cashier",
 			"total",
 			"payment_status",
+			"erp_status",
+			"erp_reference",
+			"erp_synced_at",
 			"created_at",
 			"lines",
 		)

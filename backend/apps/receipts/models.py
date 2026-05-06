@@ -10,6 +10,13 @@ from apps.checkout.models import CheckoutSession
 
 
 class Receipt(models.Model):
+	class ERPStatus(models.TextChoices):
+		NOT_SYNCED = "NOT_SYNCED", "Not synced"
+		PENDING = "PENDING", "Pending"
+		SYNCED = "SYNCED", "Synced"
+		FAILED = "FAILED", "Failed"
+		RETRY_REQUIRED = "RETRY_REQUIRED", "Retry required"
+
 	class PaymentStatus(models.TextChoices):
 		UNPAID = "UNPAID", "Unpaid"
 		PAYMENT_PENDING = "PAYMENT_PENDING", "Payment pending"
@@ -37,6 +44,13 @@ class Receipt(models.Model):
 		choices=PaymentStatus.choices,
 		default=PaymentStatus.UNPAID,
 	)
+	erp_status = models.CharField(
+		max_length=20,
+		choices=ERPStatus.choices,
+		default=ERPStatus.NOT_SYNCED,
+	)
+	erp_reference = models.CharField(max_length=100, blank=True, null=True)
+	erp_synced_at = models.DateTimeField(blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
@@ -45,6 +59,7 @@ class Receipt(models.Model):
 		indexes = [
 			models.Index(fields=["receipt_number"]),
 			models.Index(fields=["created_at"]),
+			models.Index(fields=["erp_status", "created_at"]),
 		]
 
 	def __str__(self) -> str:

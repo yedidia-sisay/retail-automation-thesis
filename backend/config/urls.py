@@ -33,6 +33,7 @@ def api_root(request):
             "vision": "/api/vision/",
 			"receipts": "/api/receipts/",
 			"payments": "/api/payments/",
+            "erp": "/api/erp/",
             "auth": "/api/auth/",
             "admin": "/admin/",
         },
@@ -48,6 +49,7 @@ urlpatterns = [
     path("api/vision/", include("apps.vision.urls")),
 	path("api/receipts/", include("apps.receipts.urls")),
     path("api/payments/", include("apps.payments.urls")),
+    path("api/erp/", include("apps.erp.urls")),
 ]
 
 if settings.DEBUG:
