@@ -37,6 +37,9 @@ from apps.receipts.services import create_receipt_from_checkout
 from rest_framework.exceptions import ValidationError
 from rest_framework.exceptions import NotFound
 
+from apps.weighted_items.serializers import AddWeightedItemSerializer, WeightedItemEntrySerializer
+from apps.weighted_items.services import add_weighted_item_to_checkout
+
 
 class CheckoutSessionViewSet(viewsets.ModelViewSet):
 	permission_classes = [AllowAny]
@@ -44,8 +47,13 @@ class CheckoutSessionViewSet(viewsets.ModelViewSet):
 
 	def get_queryset(self):
 		return (
-			CheckoutSession.objects.select_related("cashier")
-			.prefetch_related("items", "items__product")
+			CheckoutSession.objects.select_related("cashier", "receipt")
+			.prefetch_related(
+				"items",
+				"items__product",
+				"items__weighted_entry",
+				"items__weighted_entry__product",
+			)
 			.all()
 		)
 
@@ -276,4 +284,51 @@ class AddBarcodeItemAPIView(APIView):
 			.get(pk=session.pk)
 		)
 		out = CheckoutSessionSerializer(session)
+		return Response(out.data, status=status.HTTP_200_OK)
+
+
+class AddWeightedItemAPIView(APIView):
+	permission_classes = [AllowAny]
+
+	def post(self, request, session_id: int):
+		session = get_object_or_404(CheckoutSession, pk=session_id)
+		if not session.is_editable:
+			return Response(
+				{"detail": "Cannot add items to a confirmed or cancelled checkout session."},
+				status=status.HTTP_400_BAD_REQUEST,
+			)
+
+		serializer = AddWeightedItemSerializer(data=request.data)
+		try:
+			serializer.is_valid(raise_exception=True)
+		except ValidationError as exc:
+			# If serializer raises a non-field business error under "detail",
+			# return it as a plain string (not a list) to match the API style.
+			if isinstance(exc.detail, dict) and "detail" in exc.detail:
+				detail_val = exc.detail.get("detail")
+				if isinstance(detail_val, list) and detail_val:
+					return Response(
+						{"detail": str(detail_val[0])},
+						status=status.HTTP_400_BAD_REQUEST,
+					)
+				return Response(
+					{"detail": str(detail_val)},
+					status=status.HTTP_400_BAD_REQUEST,
+				)
+			raise
+
+		try:
+			entry = add_weighted_item_to_checkout(
+				checkout_session_id=session.id,
+				product_id=serializer.validated_data["product_id"],
+				weight=serializer.validated_data["weight"],
+				weight_unit=serializer.validated_data.get("weight_unit"),
+				weight_source=serializer.validated_data.get("weight_source"),
+				user=request.user if getattr(request.user, "is_authenticated", False) else None,
+				raw_ocr_text=serializer.validated_data.get("raw_ocr_text"),
+			)
+		except CheckoutError as exc:
+			return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+		out = WeightedItemEntrySerializer(entry)
 		return Response(out.data, status=status.HTTP_200_OK)

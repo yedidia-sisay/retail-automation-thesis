@@ -68,7 +68,7 @@ def create_receipt_from_checkout(checkout_session: CheckoutSession) -> Receipt:
 			receipt_number=generate_receipt_number(session),
 			cashier=session.cashier,
 			total=total,
-			payment_status="UNPAID",
+			payment_status=Receipt.PaymentStatus.UNPAID,
 		)
 
 		ReceiptLine.objects.bulk_create(

@@ -13,6 +13,8 @@ class CheckoutSession(models.Model):
 	class Status(models.TextChoices):
 		OPEN = "OPEN", "Open"
 		CONFIRMED = "CONFIRMED", "Confirmed"
+		PAYMENT_PENDING = "PAYMENT_PENDING", "Payment pending"
+		COMPLETED = "COMPLETED", "Completed"
 		CANCELLED = "CANCELLED", "Cancelled"
 
 	cashier = models.ForeignKey(

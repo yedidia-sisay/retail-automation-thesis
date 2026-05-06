@@ -9,6 +9,9 @@ from rest_framework.views import APIView
 from apps.receipts.selectors import get_receipt_detail
 from apps.receipts.serializers import ReceiptSerializer
 
+from apps.payments.serializers import PaymentSerializer
+from apps.payments.services import list_payments_for_receipt
+
 
 def _format_money(value: Decimal) -> str:
 	return f"{value.quantize(Decimal('0.01'))}"
@@ -55,3 +58,14 @@ class ReceiptPrintPreviewAPIView(APIView):
 		data = dict(serializer.data)
 		data["printable_text"] = _build_printable_text(receipt)
 		return Response(data)
+
+
+class ReceiptPaymentsAPIView(APIView):
+	permission_classes = [AllowAny]
+
+	def get(self, request, receipt_id: int):
+		# Ensure receipt exists (keeps 404 behavior consistent with other receipt endpoints).
+		get_receipt_detail(receipt_id=receipt_id)
+		qs = list_payments_for_receipt(receipt_id=receipt_id)
+		out = PaymentSerializer(qs, many=True)
+		return Response(out.data)

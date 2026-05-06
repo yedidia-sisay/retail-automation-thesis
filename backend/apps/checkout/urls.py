@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.checkout.views import (
     AddBarcodeItemAPIView,
+    AddWeightedItemAPIView,
     CheckoutItemViewSet,
     CheckoutSessionViewSet,
     ConfirmCheckoutAPIView,
@@ -18,6 +19,11 @@ urlpatterns = [
         "sessions/<int:session_id>/add-barcode/",
         AddBarcodeItemAPIView.as_view(),
         name="checkout-add-barcode",
+    ),
+    path(
+        "sessions/<int:session_id>/add-weighted-item/",
+        AddWeightedItemAPIView.as_view(),
+        name="checkout-add-weighted-item",
     ),
     path("", include(router.urls)),
 ]

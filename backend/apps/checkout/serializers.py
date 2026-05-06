@@ -11,6 +11,16 @@ class CheckoutItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_sku = serializers.CharField(source="product.sku", read_only=True)
     unit_type = serializers.CharField(source="product.unit_type", read_only=True)
+    weighted_entry = serializers.SerializerMethodField()
+
+    def get_weighted_entry(self, obj: CheckoutItem):
+        # Sprint 7: include weighted entry details when present.
+        entry = getattr(obj, "weighted_entry", None)
+        if entry is None:
+            return None
+        from apps.weighted_items.serializers import WeightedItemEntrySerializer
+
+        return WeightedItemEntrySerializer(entry, context=self.context).data
 
     class Meta:
         model = CheckoutItem
@@ -28,6 +38,7 @@ class CheckoutItemSerializer(serializers.ModelSerializer):
             "source",
             "status",
             "review_status",
+            "weighted_entry",
             "note",
             "created_at",
             "updated_at",
@@ -37,6 +48,16 @@ class CheckoutItemSerializer(serializers.ModelSerializer):
 class CheckoutSessionSerializer(serializers.ModelSerializer):
     cashier_username = serializers.CharField(source="cashier.username", read_only=True)
     items = CheckoutItemSerializer(many=True, read_only=True)
+    receipt_id = serializers.SerializerMethodField()
+    receipt_payment_status = serializers.SerializerMethodField()
+
+    def get_receipt_id(self, obj: CheckoutSession):
+        receipt = getattr(obj, "receipt", None)
+        return getattr(receipt, "id", None)
+
+    def get_receipt_payment_status(self, obj: CheckoutSession):
+        receipt = getattr(obj, "receipt", None)
+        return getattr(receipt, "payment_status", None)
 
     class Meta:
         model = CheckoutSession
@@ -47,6 +68,8 @@ class CheckoutSessionSerializer(serializers.ModelSerializer):
             "status",
             "subtotal",
             "total_amount",
+            "receipt_id",
+            "receipt_payment_status",
             "note",
             "items",
             "created_at",

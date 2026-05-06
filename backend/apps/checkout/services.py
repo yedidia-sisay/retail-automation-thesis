@@ -166,7 +166,7 @@ def validate_checkout_can_be_confirmed(session: CheckoutSession) -> None:
         ]
         raise ValidationError(
             {
-                "detail": "Checkout cannot be confirmed. Some detected items still need cashier review.",
+                "detail": "Checkout cannot be confirmed. Some detected items still need review by the cashier.",
                 "unresolved_items": unresolved_items,
             }
         )

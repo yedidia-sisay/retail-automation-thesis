@@ -32,6 +32,7 @@ def api_root(request):
 			"checkout": "/api/checkout/",
             "vision": "/api/vision/",
 			"receipts": "/api/receipts/",
+			"payments": "/api/payments/",
             "auth": "/api/auth/",
             "admin": "/admin/",
         },
@@ -46,6 +47,7 @@ urlpatterns = [
 	path("api/checkout/", include("apps.checkout.urls")),
     path("api/vision/", include("apps.vision.urls")),
 	path("api/receipts/", include("apps.receipts.urls")),
+    path("api/payments/", include("apps.payments.urls")),
 ]
 
 if settings.DEBUG:

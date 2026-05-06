@@ -10,6 +10,14 @@ from apps.checkout.models import CheckoutSession
 
 
 class Receipt(models.Model):
+	class PaymentStatus(models.TextChoices):
+		UNPAID = "UNPAID", "Unpaid"
+		PAYMENT_PENDING = "PAYMENT_PENDING", "Payment pending"
+		PAID = "PAID", "Paid"
+		PAYMENT_FAILED = "PAYMENT_FAILED", "Payment failed"
+		PAYMENT_CANCELLED = "PAYMENT_CANCELLED", "Payment cancelled"
+		REFUNDED = "REFUNDED", "Refunded"
+
 	checkout_session = models.OneToOneField(
 		CheckoutSession,
 		on_delete=models.PROTECT,
@@ -24,7 +32,11 @@ class Receipt(models.Model):
 		blank=True,
 	)
 	total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
-	payment_status = models.CharField(max_length=20, default="UNPAID")
+	payment_status = models.CharField(
+		max_length=20,
+		choices=PaymentStatus.choices,
+		default=PaymentStatus.UNPAID,
+	)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
@@ -37,6 +49,11 @@ class Receipt(models.Model):
 
 	def __str__(self) -> str:
 		return f"{self.receipt_number}"
+
+	@property
+	def is_locked(self) -> bool:
+		# Sprint 8: paid receipts are locked.
+		return self.payment_status == self.PaymentStatus.PAID
 
 
 class ReceiptLine(models.Model):
