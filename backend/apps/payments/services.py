@@ -62,7 +62,9 @@ def _update_session_status_for_payment(*, session: CheckoutSession, payment_stat
 	if payment_status == Payment.Status.COMPLETED:
 		if hasattr(CheckoutSession.Status, "COMPLETED"):
 			session.status = CheckoutSession.Status.COMPLETED
-			session.save(update_fields=["status", "updated_at"])
+			if getattr(session, "completed_at", None) is None:
+				session.completed_at = timezone.now()
+			session.save(update_fields=["status", "completed_at", "updated_at"])
 		return
 
 	# FAILED/CANCELLED: keep session confirmed so cashier can retry payment.

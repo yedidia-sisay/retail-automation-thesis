@@ -34,6 +34,7 @@ def api_root(request):
 			"receipts": "/api/receipts/",
 			"payments": "/api/payments/",
             "erp": "/api/erp/",
+			"audit": "/api/audit/",
             "auth": "/api/auth/",
             "admin": "/admin/",
         },
@@ -50,6 +51,7 @@ urlpatterns = [
 	path("api/receipts/", include("apps.receipts.urls")),
     path("api/payments/", include("apps.payments.urls")),
     path("api/erp/", include("apps.erp.urls")),
+	path("api/audit/", include("apps.audit.urls")),
 ]
 
 if settings.DEBUG:

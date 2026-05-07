@@ -40,6 +40,7 @@ class CheckoutSession(models.Model):
 		default=Decimal("0.00"),
 	)
 	confirmed_at = models.DateTimeField(null=True, blank=True)
+	completed_at = models.DateTimeField(null=True, blank=True)
 	cancelled_at = models.DateTimeField(null=True, blank=True)
 	note = models.TextField(blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
