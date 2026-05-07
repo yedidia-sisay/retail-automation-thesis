@@ -127,6 +127,11 @@ ODOO_PASSWORD = config("ODOO_PASSWORD", default="")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# CSRF settings — ensure the cookie is readable by the frontend JS
+# and works correctly through the Vite dev proxy.
+CSRF_COOKIE_HTTPONLY = False   # Must be False so JS can read it (default, but explicit)
+CSRF_COOKIE_SAMESITE = "Lax"  # Default — works fine with same-origin proxy requests
+
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default="http://localhost:3000,http://127.0.0.1:3000",

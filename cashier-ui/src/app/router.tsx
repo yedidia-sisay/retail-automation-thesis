@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import LoginPage from '../features/auth/pages/LoginPage';
 import MainCheckoutDashboard from '../features/cashier/pages/MainCheckoutDashboard';
+import { CheckoutSessionPage } from '../features/cashier/pages/CheckoutSessionPage';
 
 // Placeholder component factory — keeps things DRY for stub routes
 function placeholder(title: string, description?: string) {
@@ -56,10 +57,16 @@ export const router = createBrowserRouter([
     element: <LoginPage />,
   },
 
-  // Cashier dashboard
+  // Cashier dashboard (home)
   {
     path: '/cashier/dashboard',
     element: <MainCheckoutDashboard />,
+  },
+
+  // Active checkout session
+  {
+    path: '/cashier/session/:sessionId',
+    element: <CheckoutSessionPage />,
   },
 
   // Receipts

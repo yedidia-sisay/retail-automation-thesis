@@ -1,31 +1,57 @@
-import type { DetectedProduct } from './product';
+// ---------------------------------------------------------------------------
+// Checkout types — aligned with Django backend models and serializers
+// ---------------------------------------------------------------------------
 
-export type CheckoutSessionStatus = 'open' | 'completed' | 'cancelled';
+export type CheckoutSessionStatus =
+  | 'OPEN'
+  | 'CONFIRMED'
+  | 'PAYMENT_PENDING'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
-export interface CheckoutSession {
-  id: number;
-  sessionCode: string;
-  cashierId: number;
-  cashierName: string;
-  status: CheckoutSessionStatus;
-  createdAt: string;
-  updatedAt: string;
-}
+export type ItemSource = 'MANUAL' | 'VISION' | 'BARCODE' | 'WEIGHTED';
+
+export type ItemReviewStatus =
+  | 'NOT_REQUIRED'
+  | 'NEEDS_REVIEW'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'REPLACED';
+
+export type ItemStatus = 'ACTIVE' | 'NEEDS_REVIEW' | 'REMOVED';
 
 export interface CheckoutItem {
   id: number;
-  sessionId: number;
-  product: DetectedProduct['product'];
-  quantity: number | null;
-  weight: number | null;
-  unitPrice: number;
-  subtotal: number;
-  source: DetectedProduct['source'];
+  checkout_session: number;
+  product: number;
+  product_name: string;
+  product_sku: string;
+  unit_type: string;
+  quantity: string; // decimal string from backend
+  unit_price: string;
+  subtotal: string;
+  confidence: string | null;
+  source: ItemSource;
+  status: ItemStatus;
+  review_status: ItemReviewStatus;
+  note: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface CheckoutSummary {
-  session: CheckoutSession;
+export interface CheckoutSession {
+  id: number;
+  cashier: number | null;
+  cashier_username: string | null;
+  status: CheckoutSessionStatus;
+  subtotal: string;
+  total_amount: string;
+  receipt_id: number | null;
+  receipt_payment_status: string | null;
+  note: string;
   items: CheckoutItem[];
-  subtotal: number;
-  total: number;
+  created_at: string;
+  updated_at: string;
+  confirmed_at: string | null;
+  cancelled_at: string | null;
 }
