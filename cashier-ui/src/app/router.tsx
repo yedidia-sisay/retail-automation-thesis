@@ -2,112 +2,47 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import LoginPage from '../features/auth/pages/LoginPage';
 import MainCheckoutDashboard from '../features/cashier/pages/MainCheckoutDashboard';
 import { CheckoutSessionPage } from '../features/cashier/pages/CheckoutSessionPage';
+import { ReceiptDetailPage } from '../features/receipts/pages/ReceiptDetailPage';
+import { PrintReceiptPage } from '../features/receipts/pages/PrintReceiptPage';
 
-// Placeholder component factory — keeps things DRY for stub routes
 function placeholder(title: string, description?: string) {
   return function PlaceholderPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100">
         <div className="rounded-xl bg-white p-10 shadow text-center max-w-md w-full">
           <h1 className="text-xl font-semibold text-gray-800">{title}</h1>
-          {description && (
-            <p className="mt-2 text-sm text-gray-500">{description}</p>
-          )}
+          {description && <p className="mt-2 text-sm text-gray-500">{description}</p>}
         </div>
       </div>
     );
   };
 }
 
-const ReceiptDetailPage = placeholder(
-  'Receipt Detail',
-  'Receipt detail implementation comes next.',
-);
-const PrintReceiptPage = placeholder(
-  'Print Receipt',
-  'Print preview implementation comes next.',
-);
-const TransactionsPage = placeholder(
-  'Transactions',
-  'Transactions list implementation comes next.',
-);
-const TransactionDetailPage = placeholder(
-  'Transaction Detail',
-  'Transaction detail implementation comes next.',
-);
-const ProductSearchPage = placeholder(
-  'Product Search',
-  'Product search implementation comes next.',
-);
-const SettingsPage = placeholder(
-  'Settings',
-  'Settings implementation comes next.',
-);
+const TransactionsPage = placeholder('Transactions', 'Transactions list — coming soon.');
+const TransactionDetailPage = placeholder('Transaction Detail', 'Transaction detail — coming soon.');
+const ProductSearchPage = placeholder('Product Search', 'Product search — coming soon.');
+const SettingsPage = placeholder('Settings', 'Settings — coming soon.');
 
 export const router = createBrowserRouter([
-  // Redirect root to login
-  {
-    path: '/',
-    element: <Navigate to="/login" replace />,
-  },
+  { path: '/', element: <Navigate to="/login" replace /> },
 
-  // Auth
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
+  { path: '/login', element: <LoginPage /> },
 
-  // Cashier dashboard (home)
-  {
-    path: '/cashier/dashboard',
-    element: <MainCheckoutDashboard />,
-  },
+  { path: '/cashier/dashboard', element: <MainCheckoutDashboard /> },
+  { path: '/cashier/session/:sessionId', element: <CheckoutSessionPage /> },
 
-  // Active checkout session
-  {
-    path: '/cashier/session/:sessionId',
-    element: <CheckoutSessionPage />,
-  },
+  { path: '/receipts/:receiptId', element: <ReceiptDetailPage /> },
+  { path: '/receipts/:receiptId/print', element: <PrintReceiptPage /> },
 
-  // Receipts
-  {
-    path: '/receipts/:receiptId',
-    element: <ReceiptDetailPage />,
-  },
-  {
-    path: '/receipts/:receiptId/print',
-    element: <PrintReceiptPage />,
-  },
+  { path: '/transactions', element: <TransactionsPage /> },
+  { path: '/transactions/:transactionId', element: <TransactionDetailPage /> },
 
-  // Transactions
-  {
-    path: '/transactions',
-    element: <TransactionsPage />,
-  },
-  {
-    path: '/transactions/:transactionId',
-    element: <TransactionDetailPage />,
-  },
+  { path: '/products/search', element: <ProductSearchPage /> },
+  { path: '/settings', element: <SettingsPage /> },
 
-  // Products
-  {
-    path: '/products/search',
-    element: <ProductSearchPage />,
-  },
-
-  // Settings
-  {
-    path: '/settings',
-    element: <SettingsPage />,
-  },
-
-  // Catch-all → 404
   {
     path: '*',
-    element: placeholder(
-      'Page Not Found',
-      'The page you are looking for does not exist.',
-    )(),
+    element: placeholder('Page Not Found', 'The page you are looking for does not exist.')(),
   },
 ]);
 

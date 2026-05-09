@@ -102,3 +102,41 @@ export async function addBarcodeItem(
   );
   return res.data;
 }
+
+// ---------------------------------------------------------------------------
+// Weighted item
+// ---------------------------------------------------------------------------
+
+export interface WeightedItemEntry {
+  id: number;
+  checkout_session: number;
+  checkout_item: number | null;
+  product: number;
+  product_name: string;
+  weight: string;
+  weight_unit: 'KG' | 'GRAM';
+  unit_price: string;
+  subtotal: string;
+  weight_source: 'MANUAL' | 'OCR';
+  raw_ocr_text: string | null;
+  created_at: string;
+}
+
+export async function addWeightedItem(
+  sessionId: number,
+  productId: number,
+  weight: string,
+  weightUnit: 'KG' | 'GRAM' = 'KG',
+  weightSource: 'MANUAL' | 'OCR' = 'MANUAL',
+): Promise<WeightedItemEntry> {
+  const res = await apiClient.post<WeightedItemEntry>(
+    `/api/checkout/sessions/${sessionId}/add-weighted-item/`,
+    {
+      product_id: productId,
+      weight,
+      weight_unit: weightUnit,
+      weight_source: weightSource,
+    },
+  );
+  return res.data;
+}

@@ -1,10 +1,15 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as checkoutApi from '../../../api/checkoutApi';
+import { detectProducts } from '../../../api/visionApi';
 import { useAuth } from '../../../store/authContext';
 import { getFullName } from '../../../types/auth';
 import type { CheckoutSession, CheckoutItem } from '../../../types/checkout';
+import { WeightedItemModal } from '../components/WeightedItemModal';
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 function fmt(v: string | number | null | undefined) {
   return parseFloat(String(v ?? 0)).toFixed(2);
 }
@@ -13,6 +18,9 @@ function confidencePct(v: string | null) {
   return `${Math.round(parseFloat(v) * 100)}%`;
 }
 
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; dot: string; label: string }> = {
     OPEN: { bg: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', label: 'Open' },
@@ -68,13 +76,13 @@ function ItemCard({ item, busy, isEditable, onAccept, onReject, onRemove, onQtyC
     <div className={`flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm transition-all ${border}`}>
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center gap-2">
-          <span className="text-base font-semibold text-[#291714]">{item.product_name}</span>
+          <span className="text-sm font-semibold text-[#291714]">{item.product_name}</span>
           <SourceBadge source={item.source} />
         </div>
-        <div className="flex items-center gap-2 text-xs text-[#5d3f3c]">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[#5d3f3c]">
           {confidence && (
             <span className={needsReview ? 'font-bold text-yellow-600' : 'font-bold text-emerald-600'}>
-              {confidence}{needsReview ? ' — Review Required' : ' Confidence'}
+              {confidence}{needsReview ? ' — Review Required' : ''}
             </span>
           )}
           <span>{item.unit_type === 'kg' ? `${fmt(item.quantity)} kg` : `Qty ${fmt(item.quantity)}`}</span>
@@ -114,6 +122,9 @@ function ItemCard({ item, busy, isEditable, onAccept, onReject, onRemove, onQtyC
   );
 }
 
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 export function CheckoutSessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -123,11 +134,30 @@ export function CheckoutSessionPage() {
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  // Vision detection state
+  const [capturedImage, setCapturedImage] = useState<File | null>(null);
+  const [capturedPreviewUrl, setCapturedPreviewUrl] = useState<string | null>(null);
+  const [detecting, setDetecting] = useState(false);
+  const [detectError, setDetectError] = useState<string | null>(null);
+  const [lastDetectionCount, setLastDetectionCount] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Weighted item modal
+  const [showWeightedModal, setShowWeightedModal] = useState(false);
+
+  // Barcode
   const [barcodeInput, setBarcodeInput] = useState('');
   const [barcodeLoading, setBarcodeLoading] = useState(false);
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
+
+  // Confirm / cancel
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Payment method selection
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'MOBILE_MONEY' | 'TELEBIRR'>('CASH');
+
   const [currentTime, setCurrentTime] = useState(
     new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
   );
@@ -148,6 +178,35 @@ export function CheckoutSessionPage() {
       .finally(() => setLoading(false));
   }, [sessionId]);
 
+  // ── Image capture / upload ──
+  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCapturedImage(file);
+    setCapturedPreviewUrl(URL.createObjectURL(file));
+    setDetectError(null);
+    setLastDetectionCount(null);
+  }
+
+  async function handleDetect() {
+    if (!capturedImage || !sessionId) return;
+    setDetecting(true);
+    setDetectError(null);
+    try {
+      const result = await detectProducts(Number(sessionId), capturedImage);
+      setLastDetectionCount(result.draft_items.length);
+      // Refresh session to get new items
+      const updated = await checkoutApi.getSession(Number(sessionId));
+      setSession(updated);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setDetectError(msg ?? 'Detection failed. Check the image and try again.');
+    } finally {
+      setDetecting(false);
+    }
+  }
+
+  // ── Item actions ──
   async function handleAccept(item: CheckoutItem) {
     setActionLoading(item.id);
     try {
@@ -181,6 +240,7 @@ export function CheckoutSessionPage() {
     } finally { setActionLoading(null); }
   }
 
+  // ── Barcode ──
   async function handleBarcodeAdd(e: FormEvent) {
     e.preventDefault();
     const code = barcodeInput.trim();
@@ -196,6 +256,7 @@ export function CheckoutSessionPage() {
     } finally { setBarcodeLoading(false); }
   }
 
+  // ── Confirm / Cancel ──
   async function handleConfirm() {
     if (!session) return;
     setConfirmLoading(true);
@@ -221,6 +282,7 @@ export function CheckoutSessionPage() {
     } finally { setCancelLoading(false); }
   }
 
+  // ── Derived ──
   const isEditable = session?.status === 'OPEN';
   const activeItems = session?.items.filter((i) => i.status !== 'REMOVED') ?? [];
   const visionItems = activeItems.filter((i) => i.source === 'VISION');
@@ -228,6 +290,7 @@ export function CheckoutSessionPage() {
   const cashierName = user ? getFullName(user) : (session?.cashier_username ?? '—');
   const subtotal = activeItems.reduce((sum, i) => sum + parseFloat(i.subtotal), 0);
 
+  // ── Loading / error ──
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#C2BFB0]">
@@ -259,8 +322,17 @@ export function CheckoutSessionPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#C2BFB0] font-sans text-[#291714]">
 
+      {/* Weighted item modal */}
+      {showWeightedModal && session && (
+        <WeightedItemModal
+          sessionId={session.id}
+          onAdded={(updated) => setSession(updated)}
+          onClose={() => setShowWeightedModal(false)}
+        />
+      )}
+
       {/* ── Header ── */}
-      <header className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b border-[#e7bdb7] bg-[#fff8f7] px-6 py-3 shadow-sm">
+      <header className="fixed left-0 right-0 top-0 z-40 flex items-center justify-between border-b border-[#e7bdb7] bg-[#fff8f7] px-6 py-3 shadow-sm">
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
             <span className="text-2xl font-black tracking-tight text-[#bb0010]">VisionPOS AI</span>
@@ -292,47 +364,98 @@ export function CheckoutSessionPage() {
       <main className="mt-[64px] grid h-[calc(100vh-64px)] grid-cols-12 gap-4 overflow-hidden p-4">
 
         {/* LEFT: Camera Feeds */}
-        <section className="col-span-3 flex h-full flex-col gap-4">
-          <div className="flex flex-1 flex-col gap-2">
-            <div className="relative flex-1 overflow-hidden rounded-xl bg-black">
-              <div className="flex h-full items-center justify-center">
-                <div className="text-center">
-                  <div className="mb-2 text-4xl">📦</div>
-                  <p className="text-xs text-gray-400">Packaged Product Feed</p>
-                  <p className="mt-1 text-[10px] text-gray-500">Camera — Phase 4</p>
-                </div>
-              </div>
-              <div className="absolute bottom-3 left-3">
-                <span className="animate-pulse rounded bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">Live</span>
-              </div>
+        <section className="col-span-3 flex h-full flex-col gap-4 overflow-y-auto">
+
+          {/* Packaged product camera panel */}
+          <div className="flex flex-col gap-2 rounded-xl border border-[#e7bdb7] bg-white p-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#ab332c]">Packaged Product Feed</span>
+              <span className="animate-pulse rounded bg-red-500 px-2 py-0.5 text-[9px] font-bold uppercase text-white">Live</span>
             </div>
-            <button disabled={!isEditable}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#bb0010] py-3 text-xs font-bold text-white hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40">
-              📷 Capture Packaged
-            </button>
+
+            {/* Image preview */}
+            <div className="relative flex h-36 items-center justify-center overflow-hidden rounded-lg bg-black">
+              {capturedPreviewUrl ? (
+                <img src={capturedPreviewUrl} alt="Captured frame" className="h-full w-full object-contain" />
+              ) : (
+                <div className="text-center">
+                  <div className="text-3xl">📦</div>
+                  <p className="mt-1 text-[10px] text-gray-400">No image captured</p>
+                </div>
+              )}
+              {detecting && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <svg className="h-6 w-6 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+
+            {/* Detection result badge */}
+            {lastDetectionCount !== null && !detecting && (
+              <p className="text-center text-[11px] font-bold text-emerald-600">
+                ✓ {lastDetectionCount} item{lastDetectionCount !== 1 ? 's' : ''} detected
+              </p>
+            )}
+            {detectError && (
+              <p className="text-center text-[11px] text-red-600">{detectError}</p>
+            )}
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!isEditable || detecting}
+                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#bb0010] py-2 text-[11px] font-bold text-white hover:brightness-110 disabled:opacity-40"
+              >
+                📷 Upload Image
+              </button>
+              <button
+                onClick={handleDetect}
+                disabled={!capturedImage || !isEditable || detecting}
+                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 py-2 text-[11px] font-bold text-white hover:brightness-110 disabled:opacity-40"
+              >
+                {detecting ? '…' : '🔍 Detect'}
+              </button>
+            </div>
           </div>
-          <div className="flex flex-1 flex-col gap-2">
-            <div className="relative flex-1 overflow-hidden rounded-xl bg-black">
-              <div className="flex h-full items-center justify-center">
-                <div className="text-center">
-                  <div className="mb-2 text-4xl">⚖️</div>
-                  <p className="text-xs text-gray-400">Weighted Scale Feed</p>
-                  <p className="mt-1 text-[10px] text-gray-500">One item at a time</p>
-                </div>
-              </div>
-              <div className="absolute left-3 top-3 rounded-lg border border-white/10 bg-black/60 px-3 py-1.5 font-mono text-sm text-white backdrop-blur-md">
-                0.00 kg
+
+          {/* Weighted scale panel */}
+          <div className="flex flex-col gap-2 rounded-xl border border-[#e7bdb7] bg-white p-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#ab332c]">Weighted Scale Feed</span>
+              <span className="rounded bg-sky-100 px-2 py-0.5 text-[9px] font-bold uppercase text-sky-700">Manual</span>
+            </div>
+            <div className="flex h-24 items-center justify-center overflow-hidden rounded-lg bg-black">
+              <div className="text-center">
+                <div className="text-3xl">⚖️</div>
+                <p className="mt-1 text-[10px] text-gray-400">One item at a time</p>
               </div>
             </div>
-            <button disabled={!isEditable}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#ff7164] py-3 text-xs font-bold text-[#700408] hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-40">
-              ⚖️ Capture Weighted
+            <button
+              onClick={() => setShowWeightedModal(true)}
+              disabled={!isEditable}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#ff7164] py-2.5 text-[11px] font-bold text-[#700408] hover:brightness-105 disabled:opacity-40"
+            >
+              ⚖️ Add Weighted Item
             </button>
           </div>
         </section>
 
-        {/* MIDDLE: Review */}
-        <section className="col-span-6 flex h-full flex-col gap-3 overflow-y-auto pr-1">
+        {/* MIDDLE: Review & Correction */}
+        <section className="col-span-6 flex h-full flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar">
           {pageError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{pageError}</div>
           )}
@@ -353,7 +476,7 @@ export function CheckoutSessionPage() {
             </div>
             {visionItems.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[#e7bdb7] bg-white/50 py-8 text-center text-xs text-[#926f6a]">
-                No packaged detections yet. Capture an image to detect products.
+                No packaged detections yet. Upload an image and click Detect.
               </div>
             ) : (
               visionItems.map((item) => (
@@ -381,7 +504,7 @@ export function CheckoutSessionPage() {
             <div className="mt-auto space-y-3 pt-4">
               <form onSubmit={handleBarcodeAdd} className="flex gap-2">
                 <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#926f6a] text-sm">🔍</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#926f6a]">🔍</span>
                   <input value={barcodeInput} onChange={(e) => setBarcodeInput(e.target.value)}
                     disabled={barcodeLoading} placeholder="Scan or enter barcode…"
                     className="w-full rounded-xl border border-[#e7bdb7] bg-white py-2.5 pl-9 pr-4 text-sm focus:border-[#bb0010] focus:outline-none focus:ring-2 focus:ring-[#bb0010]/20" />
@@ -406,7 +529,7 @@ export function CheckoutSessionPage() {
                 {session?.receipt_payment_status ?? 'Pending'}
               </span>
             </div>
-            <div className="flex-1 space-y-3 overflow-y-auto p-4">
+            <div className="flex-1 space-y-3 overflow-y-auto p-4 custom-scrollbar">
               {activeItems.length === 0 ? (
                 <p className="text-center text-xs text-[#926f6a]">No items added yet.</p>
               ) : (
@@ -435,23 +558,34 @@ export function CheckoutSessionPage() {
 
           {/* Payment panel */}
           <div className="space-y-3 rounded-xl border border-[#e7bdb7] bg-white p-4 shadow-sm">
-            <select className="w-full rounded-lg border border-[#e7bdb7] bg-[#fff0ee] px-3 py-2.5 text-sm font-semibold focus:ring-[#bb0010]">
-              <option>Cash Payment</option>
-              <option>Mobile Money</option>
-              <option>Card Payment</option>
-              <option>Telebirr</option>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as typeof paymentMethod)}
+              className="w-full rounded-lg border border-[#e7bdb7] bg-[#fff0ee] px-3 py-2.5 text-sm font-semibold focus:ring-[#bb0010]"
+            >
+              <option value="CASH">Cash Payment</option>
+              <option value="MOBILE_MONEY">Mobile Money</option>
+              <option value="CARD">Card Payment</option>
+              <option value="TELEBIRR">Telebirr</option>
             </select>
             <button
               onClick={handleConfirm}
               disabled={confirmLoading || !isEditable || activeItems.length === 0}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#bb0010] py-4 text-xs font-bold text-white shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-40">
-              {confirmLoading ? 'Processing…' : 'Complete Transaction →'}
+              {confirmLoading ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Processing…
+                </>
+              ) : 'Complete Transaction →'}
             </button>
           </div>
         </section>
       </main>
 
-      {/* Bottom accent bar */}
       <footer className="fixed bottom-0 left-0 right-0 h-1.5 bg-[#bb0010]/20" />
     </div>
   );
