@@ -1,111 +1,276 @@
+"""
+YOLOClient — Django-side HTTP client for the external YOLO inference service.
+
+Architecture rule
+-----------------
+The YOLO service (yolo_service/) performs object detection only.
+This client posts an image file to that service and returns the raw
+detection list.  All business logic (price lookup, checkout item creation,
+Odoo integration) lives in the backend, NOT here.
+
+Usage
+-----
+    from apps.vision.yolo_client import YOLOClient
+
+    client = YOLOClient()
+
+    # From a file path:
+    detections = client.detect_from_path("/tmp/frame.jpg")
+
+    # From an open file-like object (e.g. Django InMemoryUploadedFile):
+    detections = client.detect_from_file(request.FILES["image"])
+
+Each detection dict contains:
+    {
+        "class_id":   int,
+        "class_name": str,
+        "confidence": float,          # 0.0 – 1.0
+        "bbox": {
+            "x1": float, "y1": float,
+            "x2": float, "y2": float,
+        },
+    }
+
+The response also includes image_width, image_height, and the inference
+parameters used — available via detect_full() if you need them.
+
+Configuration (Django settings or environment)
+----------------------------------------------
+YOLO_SERVICE_URL   — base URL of the YOLO service
+                     default: "http://127.0.0.1:8061"
+YOLO_SERVICE_TIMEOUT — request timeout in seconds (default: 30)
+USE_MOCK_YOLO      — if True, skip the HTTP call and return fixture data
+                     useful for unit tests and CI (default: True)
+"""
+
 from __future__ import annotations
 
-from dataclasses import dataclass
+import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO
 
+import requests
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
 
-@dataclass
-class _LazyModel:
-	model: Any | None = None
-	model_path: str | None = None
+# ── Defaults ───────────────────────────────────────────────────────────────
+_DEFAULT_SERVICE_URL = "http://127.0.0.1:8061"
+_DEFAULT_TIMEOUT = 30  # seconds
+
+
+def _service_url() -> str:
+    return getattr(settings, "YOLO_SERVICE_URL", _DEFAULT_SERVICE_URL).rstrip("/")
+
+
+def _timeout() -> int:
+    return int(getattr(settings, "YOLO_SERVICE_TIMEOUT", _DEFAULT_TIMEOUT))
+
+
+def _use_mock() -> bool:
+    return bool(getattr(settings, "USE_MOCK_YOLO", True))
+
+
+# ── Client ─────────────────────────────────────────────────────────────────
+
+
+class YOLOServiceError(Exception):
+    """Raised when the YOLO service returns an error or is unreachable."""
 
 
 class YOLOClient:
-	"""Thin wrapper around YOLO inference.
+    """
+    HTTP client that posts images to the external YOLO inference service
+    and returns raw detection results.
 
-	- Mock mode allows backend pipeline testing without ultralytics installed.
-	- Real mode loads a .pt model via ultralytics and runs prediction.
-	"""
+    The client is stateless — create one instance per request or share a
+    single instance; both patterns are safe.
+    """
 
-	_lazy: _LazyModel = _LazyModel()
+    # ── Public API ─────────────────────────────────────────────────────────
 
-	def detect(self, image_path: str) -> list[dict]:
-		if getattr(settings, "USE_MOCK_YOLO", True):
-			return self._mock_detect(image_path=image_path)
-		return self._real_detect(image_path=image_path)
+    def detect_from_path(self, image_path: str | Path) -> list[dict]:
+        """
+        Run detection on a local file path.
 
-	def _mock_detect(self, image_path: str) -> list[dict]:
-		# NOTE: Keep class names aligned with existing DetectionClassMapping fixtures.
-		return [
-			{
-				"class_name": "coca_cola_500ml",
-				"confidence": 0.91,
-				"bbox": [120, 80, 300, 410],
-			},
-			{
-				"class_name": "coca_cola_500ml",
-				"confidence": 0.88,
-				"bbox": [340, 90, 510, 420],
-			},
-		]
+        Parameters
+        ----------
+        image_path : str | Path
+            Absolute or relative path to a JPEG, PNG, or WEBP image.
 
-	def _get_or_load_model(self):
-		model_path = getattr(settings, "YOLO_MODEL_PATH", "") or ""
-		if not model_path:
-			raise FileNotFoundError(
-				"YOLO_MODEL_PATH is not configured. Set YOLO_MODEL_PATH or enable USE_MOCK_YOLO."
-			)
+        Returns
+        -------
+        list[dict]
+            Raw detection dicts (see module docstring for schema).
+        """
+        if _use_mock():
+            return self._mock_detections()
 
-		path = Path(model_path)
-		if not path.exists():
-			raise FileNotFoundError(
-				f"YOLO model file not found at '{model_path}'. Set YOLO_MODEL_PATH correctly or enable USE_MOCK_YOLO."
-			)
+        path = Path(image_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Image not found: '{path}'")
 
-		if self._lazy.model is not None and self._lazy.model_path == model_path:
-			return self._lazy.model
+        with path.open("rb") as fh:
+            return self._post_image(fh, filename=path.name)
 
-		# Import lazily so mock mode works without ultralytics installed.
-		try:
-			from ultralytics import YOLO  # type: ignore
-		except Exception as exc:
-			raise RuntimeError(
-				"ultralytics is not installed but USE_MOCK_YOLO is False. Install ultralytics or enable USE_MOCK_YOLO."
-			) from exc
+    def detect_from_file(self, file_obj: BinaryIO, filename: str = "image.jpg") -> list[dict]:
+        """
+        Run detection on an open file-like object (e.g. Django UploadedFile).
 
-		model = YOLO(str(path))
-		self._lazy.model = model
-		self._lazy.model_path = model_path
-		return model
+        Parameters
+        ----------
+        file_obj : BinaryIO
+            Readable binary stream.
+        filename : str
+            Filename hint used to set the correct MIME type on the request.
 
-	def _real_detect(self, image_path: str) -> list[dict]:
-		model = self._get_or_load_model()
+        Returns
+        -------
+        list[dict]
+            Raw detection dicts.
+        """
+        if _use_mock():
+            return self._mock_detections()
 
-		# `predict` returns a list of Results (one per image).
-		results = model.predict(source=image_path, verbose=False)
-		if not results:
-			return []
+        return self._post_image(file_obj, filename=filename)
 
-		result = results[0]
-		names = getattr(result, "names", {}) or {}
-		boxes = getattr(result, "boxes", None)
-		if boxes is None:
-			return []
+    def detect_full(self, image_path: str | Path) -> dict[str, Any]:
+        """
+        Like detect_from_path but returns the full response payload,
+        including image_width, image_height, and inference parameters.
 
-		xyxy = getattr(boxes, "xyxy", None)
-		conf = getattr(boxes, "conf", None)
-		cls = getattr(boxes, "cls", None)
-		if xyxy is None or conf is None or cls is None:
-			return []
+        Returns
+        -------
+        dict
+            Full JSON response from POST /detect.
+        """
+        if _use_mock():
+            return self._mock_full_response()
 
-		# Convert tensors to python lists.
-		xyxy_list = xyxy.tolist() if hasattr(xyxy, "tolist") else list(xyxy)
-		conf_list = conf.tolist() if hasattr(conf, "tolist") else list(conf)
-		cls_list = cls.tolist() if hasattr(cls, "tolist") else list(cls)
+        path = Path(image_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Image not found: '{path}'")
 
-		out: list[dict] = []
-		for bbox, confidence, class_idx in zip(xyxy_list, conf_list, cls_list):
-			# bbox is [x1,y1,x2,y2]
-			class_id = int(class_idx)
-			class_name = names.get(class_id, str(class_id))
-			out.append(
-				{
-					"class_name": str(class_name),
-					"confidence": float(confidence),
-					"bbox": [float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])],
-				}
-			)
-		return out
+        with path.open("rb") as fh:
+            return self._post_image_full(fh, filename=path.name)
+
+    def health(self) -> dict[str, Any]:
+        """
+        Call GET /health on the YOLO service.
+
+        Returns
+        -------
+        dict
+            Health response payload.
+
+        Raises
+        ------
+        YOLOServiceError
+            If the service is unreachable or returns a non-200 status.
+        """
+        url = f"{_service_url()}/health"
+        try:
+            response = requests.get(url, timeout=_timeout())
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as exc:
+            raise YOLOServiceError(
+                f"YOLO service health check failed ({url}): {exc}"
+            ) from exc
+
+    # ── Internal helpers ───────────────────────────────────────────────────
+
+    def _post_image(self, file_obj: BinaryIO, filename: str) -> list[dict]:
+        """Post image to /detect and return the detections list."""
+        return self._post_image_full(file_obj, filename)["detections"]
+
+    def _post_image_full(self, file_obj: BinaryIO, filename: str) -> dict[str, Any]:
+        """Post image to /detect and return the full response dict."""
+        url = f"{_service_url()}/detect"
+        content_type = _mime_type_for(filename)
+
+        try:
+            response = requests.post(
+                url,
+                files={"file": (filename, file_obj, content_type)},
+                timeout=_timeout(),
+            )
+        except requests.ConnectionError as exc:
+            raise YOLOServiceError(
+                f"Cannot connect to YOLO service at '{url}'. "
+                "Is the service running? Check YOLO_SERVICE_URL in settings."
+            ) from exc
+        except requests.Timeout as exc:
+            raise YOLOServiceError(
+                f"YOLO service request timed out after {_timeout()}s."
+            ) from exc
+        except requests.RequestException as exc:
+            raise YOLOServiceError(f"YOLO service request failed: {exc}") from exc
+
+        if response.status_code == 415:
+            raise YOLOServiceError(
+                f"YOLO service rejected the file type for '{filename}'. "
+                "Use JPEG, PNG, or WEBP images."
+            )
+
+        if not response.ok:
+            raise YOLOServiceError(
+                f"YOLO service returned HTTP {response.status_code}: {response.text[:200]}"
+            )
+
+        data = response.json()
+        logger.debug(
+            "YOLO service returned %d detection(s) for '%s'.",
+            len(data.get("detections", [])),
+            filename,
+        )
+        return data
+
+    # ── Mock data (for tests / CI) ─────────────────────────────────────────
+
+    @staticmethod
+    def _mock_detections() -> list[dict]:
+        """
+        Fixture detections returned when USE_MOCK_YOLO=True.
+        Class names should match DetectionClassMapping fixtures in the DB.
+        """
+        return [
+            {
+                "class_id": 0,
+                "class_name": "coca_cola_500ml",
+                "confidence": 0.91,
+                "bbox": {"x1": 120.0, "y1": 80.0, "x2": 300.0, "y2": 410.0},
+            },
+            {
+                "class_id": 0,
+                "class_name": "coca_cola_500ml",
+                "confidence": 0.88,
+                "bbox": {"x1": 340.0, "y1": 90.0, "x2": 510.0, "y2": 420.0},
+            },
+        ]
+
+    @staticmethod
+    def _mock_full_response() -> dict[str, Any]:
+        return {
+            "image_width": 1280,
+            "image_height": 720,
+            "detections": YOLOClient._mock_detections(),
+            "model_path": "models/best.pt",
+            "confidence_threshold": 0.25,
+            "iou_threshold": 0.45,
+            "image_size": 640,
+        }
+
+
+# ── Convenience function ───────────────────────────────────────────────────
+
+
+def _mime_type_for(filename: str) -> str:
+    """Return the MIME type based on file extension."""
+    ext = Path(filename).suffix.lower()
+    return {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }.get(ext, "image/jpeg")

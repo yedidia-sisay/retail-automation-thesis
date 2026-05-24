@@ -1,11 +1,16 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as checkoutApi from '../../../api/checkoutApi';
-import { detectProducts } from '../../../api/visionApi';
+import * as cameraApi from '../../../api/cameraApi';
 import { useAuth } from '../../../store/authContext';
 import { getFullName } from '../../../types/auth';
 import type { CheckoutSession, CheckoutItem } from '../../../types/checkout';
 import { WeightedItemModal } from '../components/WeightedItemModal';
+
+// ---------------------------------------------------------------------------
+// Terminal ID — in a real deployment this would come from config/env
+// ---------------------------------------------------------------------------
+const TERMINAL_ID = 'cashier-01';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -135,13 +140,17 @@ export function CheckoutSessionPage() {
   const [pageError, setPageError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  // Vision detection state
-  const [capturedImage, setCapturedImage] = useState<File | null>(null);
-  const [capturedPreviewUrl, setCapturedPreviewUrl] = useState<string | null>(null);
-  const [detecting, setDetecting] = useState(false);
-  const [detectError, setDetectError] = useState<string | null>(null);
-  const [lastDetectionCount, setLastDetectionCount] = useState<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // SKU camera state
+  const [skuPreviewKey, setSkuPreviewKey] = useState(0);
+  const [detectingSKU, setDetectingSKU] = useState(false);
+  const [skuDetectError, setSkuDetectError] = useState<string | null>(null);
+  const [lastSKUCount, setLastSKUCount] = useState<number | null>(null);
+
+  // Weighted camera state
+  const [weightedPreviewKey, setWeightedPreviewKey] = useState(0);
+  const [detectingWeighted, setDetectingWeighted] = useState(false);
+  const [weightedDetectMsg, setWeightedDetectMsg] = useState<string | null>(null);
+  const [weightedDetectError, setWeightedDetectError] = useState<string | null>(null);
 
   // Weighted item modal
   const [showWeightedModal, setShowWeightedModal] = useState(false);
@@ -178,31 +187,48 @@ export function CheckoutSessionPage() {
       .finally(() => setLoading(false));
   }, [sessionId]);
 
-  // ── Image capture / upload ──
-  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCapturedImage(file);
-    setCapturedPreviewUrl(URL.createObjectURL(file));
-    setDetectError(null);
-    setLastDetectionCount(null);
-  }
-
-  async function handleDetect() {
-    if (!capturedImage || !sessionId) return;
-    setDetecting(true);
-    setDetectError(null);
+  // ── SKU camera detection ──
+  async function handleDetectSKU() {
+    if (!sessionId) return;
+    setDetectingSKU(true);
+    setSkuDetectError(null);
+    setLastSKUCount(null);
     try {
-      const result = await detectProducts(Number(sessionId), capturedImage);
-      setLastDetectionCount(result.draft_items.length);
-      // Refresh session to get new items
+      const result = await cameraApi.detectSKUFrame(TERMINAL_ID, Number(sessionId));
+      setLastSKUCount(result.draft_items.length);
+      setSkuPreviewKey((k) => k + 1); // refresh preview after detection
       const updated = await checkoutApi.getSession(Number(sessionId));
       setSession(updated);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setDetectError(msg ?? 'Detection failed. Check the image and try again.');
+      const msg = (err as { response?: { data?: { detail?: string; message?: string } } })
+        ?.response?.data;
+      setSkuDetectError(msg?.detail ?? msg?.message ?? 'SKU detection failed.');
     } finally {
-      setDetecting(false);
+      setDetectingSKU(false);
+    }
+  }
+
+  // ── Weighted camera detection ──
+  async function handleDetectWeighted() {
+    if (!sessionId) return;
+    setDetectingWeighted(true);
+    setWeightedDetectMsg(null);
+    setWeightedDetectError(null);
+    try {
+      const result = await cameraApi.detectWeightedFrame(TERMINAL_ID, Number(sessionId));
+      setWeightedPreviewKey((k) => k + 1);
+      setWeightedDetectMsg(result.message);
+      // If weighted detection returns a product in the future, open the modal pre-filled.
+      // For now, prompt the cashier to enter weight manually.
+      if (result.weight_source === 'MANUAL_REQUIRED') {
+        setShowWeightedModal(true);
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string; message?: string } } })
+        ?.response?.data;
+      setWeightedDetectError(msg?.detail ?? msg?.message ?? 'Weighted detection failed.');
+    } finally {
+      setDetectingWeighted(false);
     }
   }
 
@@ -349,6 +375,10 @@ export function CheckoutSessionPage() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-[#5d3f3c]">{currentTime}</span>
+          <button onClick={() => navigate('/settings/cameras')}
+            className="flex items-center gap-1 rounded-lg border border-[#e7bdb7] px-3 py-2 text-xs font-semibold text-[#5d3f3c] hover:bg-[#fff0ee]">
+            ⚙️ Cameras
+          </button>
           <button onClick={() => navigate('/cashier/dashboard')}
             className="flex items-center gap-1 rounded-lg bg-[#bb0010] px-4 py-2 text-xs font-bold text-white hover:brightness-110 active:scale-95 transition-all">
             + New Session
@@ -366,24 +396,28 @@ export function CheckoutSessionPage() {
         {/* LEFT: Camera Feeds */}
         <section className="col-span-3 flex h-full flex-col gap-4 overflow-y-auto">
 
-          {/* Packaged product camera panel */}
+          {/* SKU / Packaged product camera panel */}
           <div className="flex flex-col gap-2 rounded-xl border border-[#e7bdb7] bg-white p-3 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#ab332c]">Packaged Product Feed</span>
               <span className="animate-pulse rounded bg-red-500 px-2 py-0.5 text-[9px] font-bold uppercase text-white">Live</span>
             </div>
 
-            {/* Image preview */}
+            {/* Backend-driven preview */}
             <div className="relative flex h-36 items-center justify-center overflow-hidden rounded-lg bg-black">
-              {capturedPreviewUrl ? (
-                <img src={capturedPreviewUrl} alt="Captured frame" className="h-full w-full object-contain" />
-              ) : (
-                <div className="text-center">
-                  <div className="text-3xl">📦</div>
-                  <p className="mt-1 text-[10px] text-gray-400">No image captured</p>
-                </div>
-              )}
-              {detecting && (
+              <img
+                key={skuPreviewKey}
+                src={`${cameraApi.previewUrl(TERMINAL_ID, 'sku')}?t=${skuPreviewKey}`}
+                alt="SKU camera preview"
+                className="h-full w-full object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              {/* Fallback when no image loads */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div className="text-3xl opacity-20">📦</div>
+                <p className="mt-1 text-[10px] text-gray-400 opacity-60">Camera feed</p>
+              </div>
+              {detectingSKU && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                   <svg className="h-6 w-6 animate-spin text-white" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -394,63 +428,89 @@ export function CheckoutSessionPage() {
             </div>
 
             {/* Detection result badge */}
-            {lastDetectionCount !== null && !detecting && (
+            {lastSKUCount !== null && !detectingSKU && (
               <p className="text-center text-[11px] font-bold text-emerald-600">
-                ✓ {lastDetectionCount} item{lastDetectionCount !== 1 ? 's' : ''} detected
+                ✓ {lastSKUCount} item{lastSKUCount !== 1 ? 's' : ''} detected
               </p>
             )}
-            {detectError && (
-              <p className="text-center text-[11px] text-red-600">{detectError}</p>
+            {skuDetectError && (
+              <p className="text-center text-[11px] text-red-600">{skuDetectError}</p>
             )}
-
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handleFileChange}
-            />
 
             {/* Action buttons */}
             <div className="flex gap-2">
               <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!isEditable || detecting}
-                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#bb0010] py-2 text-[11px] font-bold text-white hover:brightness-110 disabled:opacity-40"
+                onClick={() => setSkuPreviewKey((k) => k + 1)}
+                disabled={!isEditable}
+                className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[#bb0010] py-2 text-[11px] font-bold text-[#bb0010] hover:bg-red-50 disabled:opacity-40"
               >
-                📷 Upload Image
+                ↻ Refresh
               </button>
               <button
-                onClick={handleDetect}
-                disabled={!capturedImage || !isEditable || detecting}
+                onClick={handleDetectSKU}
+                disabled={!isEditable || detectingSKU}
                 className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 py-2 text-[11px] font-bold text-white hover:brightness-110 disabled:opacity-40"
               >
-                {detecting ? '…' : '🔍 Detect'}
+                {detectingSKU ? '…' : '🔍 Detect'}
               </button>
             </div>
           </div>
 
-          {/* Weighted scale panel */}
+          {/* Weighted scale camera panel */}
           <div className="flex flex-col gap-2 rounded-xl border border-[#e7bdb7] bg-white p-3 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#ab332c]">Weighted Scale Feed</span>
-              <span className="rounded bg-sky-100 px-2 py-0.5 text-[9px] font-bold uppercase text-sky-700">Manual</span>
+              <span className="rounded bg-sky-100 px-2 py-0.5 text-[9px] font-bold uppercase text-sky-700">Scale</span>
             </div>
-            <div className="flex h-24 items-center justify-center overflow-hidden rounded-lg bg-black">
-              <div className="text-center">
-                <div className="text-3xl">⚖️</div>
-                <p className="mt-1 text-[10px] text-gray-400">One item at a time</p>
+
+            {/* Backend-driven preview */}
+            <div className="relative flex h-28 items-center justify-center overflow-hidden rounded-lg bg-black">
+              <img
+                key={weightedPreviewKey}
+                src={`${cameraApi.previewUrl(TERMINAL_ID, 'weighted')}?t=${weightedPreviewKey}`}
+                alt="Weighted camera preview"
+                className="h-full w-full object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div className="text-3xl opacity-20">⚖️</div>
+                <p className="mt-1 text-[10px] text-gray-400 opacity-60">Scale feed</p>
               </div>
+              {detectingWeighted && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <svg className="h-6 w-6 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                </div>
+              )}
             </div>
-            <button
-              onClick={() => setShowWeightedModal(true)}
-              disabled={!isEditable}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#ff7164] py-2.5 text-[11px] font-bold text-[#700408] hover:brightness-105 disabled:opacity-40"
-            >
-              ⚖️ Add Weighted Item
-            </button>
+
+            {weightedDetectMsg && !detectingWeighted && (
+              <p className="text-center text-[11px] font-bold text-sky-600">
+                ⚖️ {weightedDetectMsg}
+              </p>
+            )}
+            {weightedDetectError && (
+              <p className="text-center text-[11px] text-red-600">{weightedDetectError}</p>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleDetectWeighted}
+                disabled={!isEditable || detectingWeighted}
+                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-sky-600 py-2 text-[11px] font-bold text-white hover:brightness-110 disabled:opacity-40"
+              >
+                {detectingWeighted ? '…' : '📷 Detect Weight'}
+              </button>
+              <button
+                onClick={() => setShowWeightedModal(true)}
+                disabled={!isEditable}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#ff7164] py-2 text-[11px] font-bold text-[#700408] hover:brightness-105 disabled:opacity-40"
+              >
+                ⚖️ Manual
+              </button>
+            </div>
           </div>
         </section>
 
@@ -476,7 +536,7 @@ export function CheckoutSessionPage() {
             </div>
             {visionItems.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[#e7bdb7] bg-white/50 py-8 text-center text-xs text-[#926f6a]">
-                No packaged detections yet. Upload an image and click Detect.
+                No packaged detections yet. Click <strong>Detect</strong> on the SKU camera feed.
               </div>
             ) : (
               visionItems.map((item) => (

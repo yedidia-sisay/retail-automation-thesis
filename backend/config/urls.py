@@ -31,6 +31,7 @@ def api_root(request):
             "catalog": "/api/catalog/",
 			"checkout": "/api/checkout/",
             "vision": "/api/vision/",
+            "terminals": "/api/terminals/",
 			"receipts": "/api/receipts/",
 			"payments": "/api/payments/",
             "erp": "/api/erp/",
@@ -41,13 +42,20 @@ def api_root(request):
     })
 
 
+def health_check(request):
+    """Lightweight liveness probe used by Docker health checks."""
+    return JsonResponse({"status": "ok"})
+
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/health/", health_check, name="health-check"),
     path("api/", api_root, name="api-root"),
     path("api/auth/", include("apps.accounts.urls")),
     path("api/catalog/", include("apps.catalog.urls")),
 	path("api/checkout/", include("apps.checkout.urls")),
     path("api/vision/", include("apps.vision.urls")),
+	path("api/terminals/", include("apps.vision.terminal_urls")),
 	path("api/receipts/", include("apps.receipts.urls")),
     path("api/payments/", include("apps.payments.urls")),
     path("api/erp/", include("apps.erp.urls")),

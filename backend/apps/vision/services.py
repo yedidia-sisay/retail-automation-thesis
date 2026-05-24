@@ -41,7 +41,7 @@ def run_detection_for_checkout(*, checkout_session: CheckoutSession, image_file,
 
 	client = YOLOClient()
 	try:
-		detections = client.detect(detection_run.image.path)
+		detections = client.detect_from_path(detection_run.image.path)
 	except Exception as exc:
 		detection_run.status = DetectionRun.Status.FAILED
 		detection_run.error_message = str(exc)
@@ -66,14 +66,20 @@ def run_detection_for_checkout(*, checkout_session: CheckoutSession, image_file,
 	for det in detections:
 		class_name = (det.get("class_name") or "").strip()
 		confidence = _to_decimal(det.get("confidence", 0), places="0.0001")
-		bbox = det.get("bbox") or [0, 0, 0, 0]
-		if len(bbox) != 4:
-			bbox = [0, 0, 0, 0]
-
-		bbox_x1 = _to_decimal(bbox[0], places="0.01")
-		bbox_y1 = _to_decimal(bbox[1], places="0.01")
-		bbox_x2 = _to_decimal(bbox[2], places="0.01")
-		bbox_y2 = _to_decimal(bbox[3], places="0.01")
+		raw_bbox = det.get("bbox") or {}
+		# bbox is a dict {"x1": ..., "y1": ..., "x2": ..., "y2": ...}
+		if isinstance(raw_bbox, dict):
+			bbox_x1 = _to_decimal(raw_bbox.get("x1", 0), places="0.01")
+			bbox_y1 = _to_decimal(raw_bbox.get("y1", 0), places="0.01")
+			bbox_x2 = _to_decimal(raw_bbox.get("x2", 0), places="0.01")
+			bbox_y2 = _to_decimal(raw_bbox.get("y2", 0), places="0.01")
+		else:
+			# Fallback for legacy list format [x1, y1, x2, y2]
+			bbox_list = raw_bbox if len(raw_bbox) == 4 else [0, 0, 0, 0]
+			bbox_x1 = _to_decimal(bbox_list[0], places="0.01")
+			bbox_y1 = _to_decimal(bbox_list[1], places="0.01")
+			bbox_x2 = _to_decimal(bbox_list[2], places="0.01")
+			bbox_y2 = _to_decimal(bbox_list[3], places="0.01")
 
 		mapped = get_product_for_detection_class(class_name)
 		matched_product = None

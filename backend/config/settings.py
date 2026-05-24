@@ -116,6 +116,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Vision / YOLO settings
 USE_MOCK_YOLO = config("USE_MOCK_YOLO", default=True, cast=bool)
 YOLO_MODEL_PATH = config("YOLO_MODEL_PATH", default="")
+YOLO_SERVICE_URL = config("YOLO_SERVICE_URL", default="http://127.0.0.1:8061")
+YOLO_SERVICE_TIMEOUT = config("YOLO_SERVICE_TIMEOUT", default=30, cast=int)
 
 # ERP / Odoo adapter settings
 # Keep FAKE as the default so tests and local development do not depend on Odoo.

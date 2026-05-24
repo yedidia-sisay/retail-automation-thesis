@@ -4,6 +4,7 @@ import MainCheckoutDashboard from '../features/cashier/pages/MainCheckoutDashboa
 import { CheckoutSessionPage } from '../features/cashier/pages/CheckoutSessionPage';
 import { ReceiptDetailPage } from '../features/receipts/pages/ReceiptDetailPage';
 import { PrintReceiptPage } from '../features/receipts/pages/PrintReceiptPage';
+import CameraSettingsPage from '../features/settings/pages/CameraSettingsPage';
 
 function placeholder(title: string, description?: string) {
   return function PlaceholderPage() {
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
 
   { path: '/products/search', element: <ProductSearchPage /> },
   { path: '/settings', element: <SettingsPage /> },
+  { path: '/settings/cameras', element: <CameraSettingsPage /> },
 
   {
     path: '*',

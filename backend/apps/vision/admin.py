@@ -1,6 +1,14 @@
 from django.contrib import admin
 
-from apps.vision.models import DetectedObject, DetectionRun, ModelVersion
+from apps.vision.models import CameraConfig, DetectedObject, DetectionRun, ModelVersion
+
+
+@admin.register(CameraConfig)
+class CameraConfigAdmin(admin.ModelAdmin):
+	list_display = ("terminal_id", "camera_role", "source_type", "is_active", "mock_folder_path", "usb_device_index", "stream_url", "updated_at")
+	list_filter = ("camera_role", "source_type", "is_active")
+	search_fields = ("terminal_id",)
+	readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(ModelVersion)

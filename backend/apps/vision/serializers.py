@@ -2,7 +2,71 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from apps.vision.models import DetectedObject, DetectionRun
+from apps.vision.models import CameraConfig, DetectedObject, DetectionRun
+
+
+class CameraConfigSerializer(serializers.ModelSerializer):
+	"""Full read/write serializer for CameraConfig.
+
+	Validates that the required source-specific field is present for the
+	chosen source_type.
+	"""
+
+	class Meta:
+		model = CameraConfig
+		fields = (
+			"id",
+			"terminal_id",
+			"camera_role",
+			"source_type",
+			"is_active",
+			"mock_folder_path",
+			"usb_device_index",
+			"stream_url",
+			"frame_interval_ms",
+			"created_at",
+			"updated_at",
+		)
+		read_only_fields = ("id", "terminal_id", "camera_role", "created_at", "updated_at")
+
+	def validate(self, attrs):
+		# When PATCHing, merge with existing instance values so partial updates work.
+		instance = self.instance
+		source_type = attrs.get(
+			"source_type",
+			getattr(instance, "source_type", None) if instance else None,
+		)
+
+		mock_folder_path = attrs.get(
+			"mock_folder_path",
+			getattr(instance, "mock_folder_path", None) if instance else None,
+		)
+		usb_device_index = attrs.get(
+			"usb_device_index",
+			getattr(instance, "usb_device_index", None) if instance else None,
+		)
+		stream_url = attrs.get(
+			"stream_url",
+			getattr(instance, "stream_url", None) if instance else None,
+		)
+
+		if source_type == CameraConfig.SourceType.MOCK_FOLDER:
+			if not (mock_folder_path or "").strip():
+				raise serializers.ValidationError(
+					{"mock_folder_path": "mock_folder_path is required when source_type is MOCK_FOLDER."}
+				)
+		elif source_type == CameraConfig.SourceType.USB:
+			if usb_device_index is None:
+				raise serializers.ValidationError(
+					{"usb_device_index": "usb_device_index is required when source_type is USB."}
+				)
+		elif source_type == CameraConfig.SourceType.NETWORK:
+			if not (stream_url or "").strip():
+				raise serializers.ValidationError(
+					{"stream_url": "stream_url is required when source_type is NETWORK."}
+				)
+
+		return attrs
 
 
 class DetectedObjectSerializer(serializers.ModelSerializer):
