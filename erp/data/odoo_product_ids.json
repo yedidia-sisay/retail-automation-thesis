@@ -1,0 +1,209 @@
+[
+  {
+    "odoo_product_id": "12",
+    "odoo_template_id": "12",
+    "sku": "ABOUNDED-BISCUIT",
+    "name": "Abounded Biscuit",
+    "barcode": "100000000007",
+    "price": 55.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "22",
+    "odoo_template_id": "22",
+    "sku": "APPLE-KG",
+    "name": "Apple (per kg)",
+    "barcode": "200000000002",
+    "price": 80.0,
+    "uom": "kg"
+  },
+  {
+    "odoo_product_id": "21",
+    "odoo_template_id": "21",
+    "sku": "BANANA-KG",
+    "name": "Banana (per kg)",
+    "barcode": "200000000001",
+    "price": 45.0,
+    "uom": "kg"
+  },
+  {
+    "odoo_product_id": "17",
+    "odoo_template_id": "17",
+    "sku": "BLUE-SUNCHIPS",
+    "name": "Blue Sunchips",
+    "barcode": "100000000014",
+    "price": 50.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "14",
+    "odoo_template_id": "14",
+    "sku": "BRAVO-TISSUE",
+    "name": "Bravo Tissue Paper",
+    "barcode": "100000000009",
+    "price": 65.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "7",
+    "odoo_template_id": "7",
+    "sku": "CAPPUCCINO",
+    "name": "Cappuccino",
+    "barcode": "100000000011",
+    "price": 45.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "4",
+    "odoo_template_id": "4",
+    "sku": "COCA-COLA",
+    "name": "Coca Cola",
+    "barcode": "100000000001",
+    "price": 35.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "20",
+    "odoo_template_id": "20",
+    "sku": "DECOY",
+    "name": "Decoy",
+    "barcode": "100000000017",
+    "price": 20.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "16",
+    "odoo_template_id": "16",
+    "sku": "DETERGENT",
+    "name": "Detergent",
+    "barcode": "100000000013",
+    "price": 130.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "2",
+    "odoo_template_id": "2",
+    "sku": "DISC",
+    "name": "Discount",
+    "barcode": "",
+    "price": 0.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "8",
+    "odoo_template_id": "8",
+    "sku": "DOVE-SOAP",
+    "name": "Dove Soap",
+    "barcode": "100000000003",
+    "price": 85.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "9",
+    "odoo_template_id": "9",
+    "sku": "DURU-SOAP",
+    "name": "Duru Soap",
+    "barcode": "100000000004",
+    "price": 75.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "15",
+    "odoo_template_id": "15",
+    "sku": "EVE-COMFORT",
+    "name": "Eve Comfort",
+    "barcode": "100000000012",
+    "price": 110.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "10",
+    "odoo_template_id": "10",
+    "sku": "MAWELL-PASTA",
+    "name": "Mawell Pasta",
+    "barcode": "100000000005",
+    "price": 95.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "13",
+    "odoo_template_id": "13",
+    "sku": "NICE-SMALL-SOFT",
+    "name": "Nice Small Soft",
+    "barcode": "100000000008",
+    "price": 40.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "11",
+    "odoo_template_id": "11",
+    "sku": "OMAAR-TUNA",
+    "name": "Omaar Tuna",
+    "barcode": "100000000006",
+    "price": 120.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "24",
+    "odoo_template_id": "24",
+    "sku": "ONION-KG",
+    "name": "Onion (per kg)",
+    "barcode": "200000000004",
+    "price": 30.0,
+    "uom": "kg"
+  },
+  {
+    "odoo_product_id": "5",
+    "odoo_template_id": "5",
+    "sku": "PEPSI",
+    "name": "Pepsi",
+    "barcode": "100000000002",
+    "price": 33.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "19",
+    "odoo_template_id": "19",
+    "sku": "RED-QQ-SNACK",
+    "name": "Red QQ Snack",
+    "barcode": "100000000016",
+    "price": 30.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "6",
+    "odoo_template_id": "6",
+    "sku": "SOL-WATER",
+    "name": "Sol Water",
+    "barcode": "100000000010",
+    "price": 25.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "1",
+    "odoo_template_id": "1",
+    "sku": "TIPS",
+    "name": "Tips",
+    "barcode": "",
+    "price": 1.0,
+    "uom": "Units"
+  },
+  {
+    "odoo_product_id": "23",
+    "odoo_template_id": "23",
+    "sku": "TOMATO-KG",
+    "name": "Tomato (per kg)",
+    "barcode": "200000000003",
+    "price": 35.0,
+    "uom": "kg"
+  },
+  {
+    "odoo_product_id": "18",
+    "odoo_template_id": "18",
+    "sku": "YELLOW-SUNCHIPS",
+    "name": "Yellow Sunchips",
+    "barcode": "100000000015",
+    "price": 50.0,
+    "uom": "Units"
+  }
+]

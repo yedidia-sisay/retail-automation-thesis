@@ -1,0 +1,59 @@
+Watching for file changes with StatReloader
+[tcp @ 0x7532e82c6440] Connection to tcp://10.160.146.119:8080 failed: Connection refused
+Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
+[27/May/2026 21:06:57] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905217370 HTTP/1.1" 503 132
+[tcp @ 0x7532e803a080] Connection to tcp://10.160.146.119:8080 failed: Connection refused
+Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
+[27/May/2026 21:06:58] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905218370 HTTP/1.1" 503 132
+[tcp @ 0x7532e8034340] Connection to tcp://10.160.146.119:8080 failed: Connection refused
+Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
+[27/May/2026 21:06:59] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905219370 HTTP/1.1" 503 132
+[tcp @ 0x7532e8207000] Connection to tcp://10.160.146.119:8080 failed: Connection refused
+Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
+[27/May/2026 21:07:00] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905220371 HTTP/1.1" 503 132
+[tcp @ 0x7532e803bc80] Connection to tcp://10.160.146.119:8080 failed: Connection refused
+Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
+[27/May/2026 21:07:01] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905221387 HTTP/1.1" 503 132
+[tcp @ 0x7532e82bf340] Connection to tcp://10.160.146.119:8080 failed: Connection refused
+Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
+[27/May/2026 21:07:02] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905222405 HTTP/1.1" 503 132
+[27/May/2026 21:07:03] "GET /api/auth/me/ HTTP/1.1" 200 139
+[27/May/2026 21:07:03] "GET /api/auth/me/ HTTP/1.1" 200 139
+[27/May/2026 21:07:03] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:07:03] "GET /api/checkout/sessions/154/ HTTP/1.1" 200 313
+[27/May/2026 21:07:03] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:07:03] "GET /api/checkout/sessions/154/ HTTP/1.1" 200 313
+[27/May/2026 21:07:06] "POST /api/auth/logout/ HTTP/1.1" 200 37
+[27/May/2026 21:07:08] "POST /api/auth/login/ HTTP/1.1" 200 139
+[27/May/2026 21:07:29] "POST /api/checkout/sessions/ HTTP/1.1" 201 313
+[27/May/2026 21:07:29] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:07:29] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 313
+[27/May/2026 21:07:29] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:07:29] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 313
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 334
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/weighted/settings/ HTTP/1.1" 200 338
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 334
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/weighted/settings/ HTTP/1.1" 200 338
+[tcp @ 0x7532e8042380] Connection to tcp://10.160.146.119:8080 failed: Connection refused
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/weighted/preview/?t=0 HTTP/1.1" 200 3229479
+Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=0 HTTP/1.1" 503 132
+[27/May/2026 21:09:18] "PATCH /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 367
+[27/May/2026 21:09:18] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1 HTTP/1.1" 200 33302
+[27/May/2026 21:09:21] "POST /api/terminals/cashier-01/cameras/sku/test/ HTTP/1.1" 200 50
+[27/May/2026 21:09:21] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=2 HTTP/1.1" 200 33313
+[27/May/2026 21:09:33] "POST /api/terminals/cashier-01/cameras/sku/test/ HTTP/1.1" 200 50
+[27/May/2026 21:09:33] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=3 HTTP/1.1" 200 89929
+[27/May/2026 21:09:37] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:09:38] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:09:38] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 313
+[27/May/2026 21:09:38] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 313
+[27/May/2026 21:09:49] "POST /api/terminals/cashier-01/vision/detect-sku-frame/ HTTP/1.1" 200 538
+[27/May/2026 21:09:49] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 735
+[27/May/2026 21:09:57] "POST /api/checkout/items/267/accept/ HTTP/1.1" 200 416
+[27/May/2026 21:09:59] "POST /api/checkout/sessions/155/confirm/ HTTP/1.1" 200 460
+[27/May/2026 21:09:59] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 768
+[27/May/2026 21:09:59] "GET /api/receipts/21/ HTTP/1.1" 200 460
+[27/May/2026 21:09:59] "GET /api/receipts/21/ HTTP/1.1" 200 460
+[27/May/2026 21:10:02] "POST /api/payments/simulate/ HTTP/1.1" 201 259
+[27/May/2026 21:10:02] "GET /api/receipts/21/ HTTP/1.1" 200 458

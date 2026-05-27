@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Retail Checkout Automation — Odoo ERP Stack
+#
+# Services:
+#   db      — PostgreSQL 15 (Odoo database)
+#   odoo    — Odoo 17 Community Edition
+#
+# Volumes:
+#   odoo-db-data   — PostgreSQL data (persistent)
+#   odoo-web-data  — Odoo filestore / sessions (persistent)
+#
+# Usage:
+#   docker compose up -d          # start in background
+#   docker compose logs -f odoo   # follow Odoo logs
+#   docker compose down           # stop (data preserved)
+#   docker compose down -v        # stop AND delete volumes (full reset)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: retail_odoo_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-odoo_retail}
+      POSTGRES_USER: ${POSTGRES_USER:-odoo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-odoo_secret_2024}
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+    networks:
+      - odoo-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-odoo} -d ${POSTGRES_DB:-odoo_retail}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Odoo 17 ────────────────────────────────────────────────────────────────
+  odoo:
+    image: odoo:17.0
+    container_name: retail_odoo
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${ODOO_PORT:-8069}:8069"
+    environment:
+      HOST: db
+      PORT: 5432
+      USER: ${POSTGRES_USER:-odoo}
+      PASSWORD: ${POSTGRES_PASSWORD:-odoo_secret_2024}
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./config/odoo.conf:/etc/odoo/odoo.conf:ro
+      - ./addons:/mnt/extra-addons:ro
+    networks:
+      - odoo-net
+    command: ["odoo", "--config=/etc/odoo/odoo.conf"]
+
+# ── Volumes ────────────────────────────────────────────────────────────────
+volumes:
+  odoo-db-data:
+    name: retail_odoo_db_data
+  odoo-web-data:
+    name: retail_odoo_web_data
+
+# ── Networks ───────────────────────────────────────────────────────────────
+networks:
+  odoo-net:
+    name: retail_odoo_net
+    driver: bridge

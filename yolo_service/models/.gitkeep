@@ -1,0 +1,5 @@
+# Place your trained YOLO weights here as best.pt
+# Example: yolo_service/models/best.pt
+#
+# This file is a placeholder so the models/ directory is tracked by git.
+# The actual .pt file should be listed in .gitignore (it can be large).

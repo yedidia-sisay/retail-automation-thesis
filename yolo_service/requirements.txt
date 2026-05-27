@@ -1,0 +1,12 @@
+# YOLO Inference Service — Python dependencies
+# Pin exact versions for reproducibility.
+
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+python-dotenv==1.0.1
+Pillow==11.0.0
+pydantic==2.10.3
+pydantic-settings==2.6.1
+ultralytics==8.3.40
+opencv-python-headless==4.10.0.84

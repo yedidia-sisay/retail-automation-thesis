@@ -1,0 +1,12 @@
+INFO:     Will watch for changes in these directories: ['/home/geracha/code/thesis/yolo_service']
+INFO:     Uvicorn running on http://0.0.0.0:8061 (Press CTRL+C to quit)
+INFO:     Started reloader process [163474] using WatchFiles
+INFO:     Started server process [163489]
+INFO:     Waiting for application startup.
+2026-05-27 21:06:56,616 | INFO     | app.main | Starting YOLO inference service …
+2026-05-27 21:06:58,043 | INFO     | app.detector | Loading YOLO model from '/home/geracha/code/thesis/yolo_service/models/best.pt' …
+2026-05-27 21:06:58,068 | INFO     | app.detector | Model loaded successfully.
+2026-05-27 21:06:58,068 | INFO     | app.main | YOLO model ready.
+INFO:     Application startup complete.
+2026-05-27 21:09:49,257 | INFO     | app.main | Detected 1 object(s) in image (1920x1080).
+INFO:     127.0.0.1:38136 - "POST /detect HTTP/1.1" 200 OK

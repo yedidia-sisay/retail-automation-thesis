@@ -1,0 +1,213 @@
+[
+  {
+    "name": "Coca Cola",
+    "sku": "COCA-COLA",
+    "barcode": "100000000001",
+    "category": "Beverages",
+    "unit_type": "PIECE",
+    "price": 35.00,
+    "yolo_class_name": "Coca Cola",
+    "odoo_product_id": null,
+    "note": "Populated by export_odoo_ids.py after setup"
+  },
+  {
+    "name": "Pepsi",
+    "sku": "PEPSI",
+    "barcode": "100000000002",
+    "category": "Beverages",
+    "unit_type": "PIECE",
+    "price": 33.00,
+    "yolo_class_name": "Pepsi",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Sol Water",
+    "sku": "SOL-WATER",
+    "barcode": "100000000010",
+    "category": "Beverages",
+    "unit_type": "PIECE",
+    "price": 25.00,
+    "yolo_class_name": "Sol Water",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Cappuccino",
+    "sku": "CAPPUCCINO",
+    "barcode": "100000000011",
+    "category": "Beverages",
+    "unit_type": "PIECE",
+    "price": 45.00,
+    "yolo_class_name": "Cappuccino",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Dove Soap",
+    "sku": "DOVE-SOAP",
+    "barcode": "100000000003",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 85.00,
+    "yolo_class_name": "Dove Soap",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Duru Soap",
+    "sku": "DURU-SOAP",
+    "barcode": "100000000004",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 75.00,
+    "yolo_class_name": "Duru Soap",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Mawell Pasta",
+    "sku": "MAWELL-PASTA",
+    "barcode": "100000000005",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 95.00,
+    "yolo_class_name": "Mawell Pasta",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Omaar Tuna",
+    "sku": "OMAAR-TUNA",
+    "barcode": "100000000006",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 120.00,
+    "yolo_class_name": "Omaar Tuna",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Abounded Biscuit",
+    "sku": "ABOUNDED-BISCUIT",
+    "barcode": "100000000007",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 55.00,
+    "yolo_class_name": "Abounded Biscuit",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Nice Small Soft",
+    "sku": "NICE-SMALL-SOFT",
+    "barcode": "100000000008",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 40.00,
+    "yolo_class_name": "Nice Small Soft",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Bravo Tissue Paper",
+    "sku": "BRAVO-TISSUE",
+    "barcode": "100000000009",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 65.00,
+    "yolo_class_name": "Bravo Tissue Paper",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Eve Comfort",
+    "sku": "EVE-COMFORT",
+    "barcode": "100000000012",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 110.00,
+    "yolo_class_name": "Eve Comfort",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Detergent",
+    "sku": "DETERGENT",
+    "barcode": "100000000013",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 130.00,
+    "yolo_class_name": "detergent",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Blue Sunchips",
+    "sku": "BLUE-SUNCHIPS",
+    "barcode": "100000000014",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 50.00,
+    "yolo_class_name": "Blue Sunchips",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Yellow Sunchips",
+    "sku": "YELLOW-SUNCHIPS",
+    "barcode": "100000000015",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 50.00,
+    "yolo_class_name": "Yellow Sunchips",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Red QQ Snack",
+    "sku": "RED-QQ-SNACK",
+    "barcode": "100000000016",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 30.00,
+    "yolo_class_name": "Red QQ snack",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Decoy",
+    "sku": "DECOY",
+    "barcode": "100000000017",
+    "category": "Packaged Products",
+    "unit_type": "PIECE",
+    "price": 20.00,
+    "yolo_class_name": "Decoy",
+    "odoo_product_id": null
+  },
+  {
+    "name": "Banana (per kg)",
+    "sku": "BANANA-KG",
+    "barcode": "200000000001",
+    "category": "Weighted Products",
+    "unit_type": "KG",
+    "price": 45.00,
+    "yolo_class_name": null,
+    "odoo_product_id": null
+  },
+  {
+    "name": "Apple (per kg)",
+    "sku": "APPLE-KG",
+    "barcode": "200000000002",
+    "category": "Weighted Products",
+    "unit_type": "KG",
+    "price": 80.00,
+    "yolo_class_name": null,
+    "odoo_product_id": null
+  },
+  {
+    "name": "Tomato (per kg)",
+    "sku": "TOMATO-KG",
+    "barcode": "200000000003",
+    "category": "Weighted Products",
+    "unit_type": "KG",
+    "price": 35.00,
+    "yolo_class_name": null,
+    "odoo_product_id": null
+  },
+  {
+    "name": "Onion (per kg)",
+    "sku": "ONION-KG",
+    "barcode": "200000000004",
+    "category": "Weighted Products",
+    "unit_type": "KG",
+    "price": 30.00,
+    "yolo_class_name": null,
+    "odoo_product_id": null
+  }
+]

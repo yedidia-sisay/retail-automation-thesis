@@ -1,0 +1,103 @@
+from __future__ import annotations
+
+from decimal import Decimal
+
+from django.conf import settings
+from django.db import models
+
+from apps.catalog.models import Product
+from apps.checkout.models import CheckoutSession
+
+
+class Receipt(models.Model):
+	class ERPStatus(models.TextChoices):
+		NOT_SYNCED = "NOT_SYNCED", "Not synced"
+		PENDING = "PENDING", "Pending"
+		SYNCED = "SYNCED", "Synced"
+		FAILED = "FAILED", "Failed"
+		RETRY_REQUIRED = "RETRY_REQUIRED", "Retry required"
+
+	class PaymentStatus(models.TextChoices):
+		UNPAID = "UNPAID", "Unpaid"
+		PAYMENT_PENDING = "PAYMENT_PENDING", "Payment pending"
+		PAID = "PAID", "Paid"
+		PAYMENT_FAILED = "PAYMENT_FAILED", "Payment failed"
+		PAYMENT_CANCELLED = "PAYMENT_CANCELLED", "Payment cancelled"
+		REFUNDED = "REFUNDED", "Refunded"
+
+	checkout_session = models.OneToOneField(
+		CheckoutSession,
+		on_delete=models.PROTECT,
+		related_name="receipt",
+	)
+	receipt_number = models.CharField(max_length=64, unique=True)
+	cashier = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		on_delete=models.SET_NULL,
+		related_name="receipts",
+		null=True,
+		blank=True,
+	)
+	total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+	payment_status = models.CharField(
+		max_length=20,
+		choices=PaymentStatus.choices,
+		default=PaymentStatus.UNPAID,
+	)
+	erp_status = models.CharField(
+		max_length=20,
+		choices=ERPStatus.choices,
+		default=ERPStatus.NOT_SYNCED,
+	)
+	erp_reference = models.CharField(max_length=100, blank=True, null=True)
+	erp_synced_at = models.DateTimeField(blank=True, null=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		ordering = ("-created_at",)
+		indexes = [
+			models.Index(fields=["receipt_number"]),
+			models.Index(fields=["created_at"]),
+			models.Index(fields=["erp_status", "created_at"]),
+		]
+
+	def __str__(self) -> str:
+		return f"{self.receipt_number}"
+
+	@property
+	def is_locked(self) -> bool:
+		# Sprint 8: paid receipts are locked.
+		return self.payment_status == self.PaymentStatus.PAID
+
+
+class ReceiptLine(models.Model):
+	receipt = models.ForeignKey(
+		Receipt,
+		on_delete=models.CASCADE,
+		related_name="lines",
+	)
+	product = models.ForeignKey(
+		Product,
+		on_delete=models.SET_NULL,
+		related_name="receipt_lines",
+		null=True,
+		blank=True,
+	)
+	product_name = models.CharField(max_length=255)
+	product_sku = models.CharField(max_length=64, blank=True)
+	quantity = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal("1.000"))
+	unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+	subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+	source = models.CharField(max_length=20)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ("created_at",)
+		indexes = [
+			models.Index(fields=["receipt"]),
+			models.Index(fields=["product_sku"]),
+		]
+
+	def __str__(self) -> str:
+		return f"{self.product_sku} x {self.quantity}"
