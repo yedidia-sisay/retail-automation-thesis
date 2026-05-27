@@ -20,6 +20,7 @@ from apps.vision.views import (
 	CameraListAPIView,
 	CameraPreviewAPIView,
 	CameraSettingsAPIView,
+	CameraStreamInfoAPIView,
 	CameraTestAPIView,
 	DetectSKUFrameAPIView,
 	DetectWeightedFrameAPIView,
@@ -44,11 +45,17 @@ urlpatterns = [
 		CameraTestAPIView.as_view(),
 		name="terminal-camera-test",
 	),
-	# Camera preview (GET → returns JPEG)
+	# Camera preview (GET → returns JPEG) — used for mock/USB sources
 	path(
 		"<str:terminal_id>/cameras/<str:camera_role>/preview/",
 		CameraPreviewAPIView.as_view(),
 		name="terminal-camera-preview",
+	),
+	# Stream info (GET → returns source_type + direct stream URL for NETWORK sources)
+	path(
+		"<str:terminal_id>/cameras/<str:camera_role>/stream-info/",
+		CameraStreamInfoAPIView.as_view(),
+		name="terminal-camera-stream-info",
 	),
 	# Detection endpoints
 	path(

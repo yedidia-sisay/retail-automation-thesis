@@ -23,6 +23,7 @@ class CameraConfigSerializer(serializers.ModelSerializer):
 			"mock_folder_path",
 			"usb_device_index",
 			"stream_url",
+			"snapshot_url",
 			"frame_interval_ms",
 			"created_at",
 			"updated_at",

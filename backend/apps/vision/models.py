@@ -36,6 +36,11 @@ class CameraConfig(models.Model):
 	mock_folder_path = models.CharField(max_length=1024, blank=True, null=True)
 	usb_device_index = models.IntegerField(blank=True, null=True)
 	stream_url = models.CharField(max_length=2048, blank=True, null=True)
+	# Optional snapshot URL for NETWORK sources (e.g. /shot.jpg on IP Webcam).
+	# When set, frame capture for detection uses a plain HTTP GET to this URL
+	# instead of reading from the MJPEG stream via OpenCV — avoids buffer-stale
+	# and "Stream ends prematurely" issues entirely.
+	snapshot_url = models.CharField(max_length=2048, blank=True, null=True)
 
 	# How often the mock folder cycles to the next image (ms).
 	frame_interval_ms = models.IntegerField(default=1000)

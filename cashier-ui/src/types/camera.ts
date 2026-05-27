@@ -14,6 +14,7 @@ export interface CameraConfig {
   mock_folder_path: string | null;
   usb_device_index: number | null;
   stream_url: string | null;
+  snapshot_url: string | null;
   frame_interval_ms: number;
   created_at: string;
   updated_at: string;

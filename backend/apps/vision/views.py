@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.checkout.models import CheckoutSession
-from apps.vision.camera_sources import CameraSourceError, MockFolderCameraSource, get_camera_source
+from apps.vision.camera_sources import CameraSourceError, MockFolderCameraSource, NetworkCameraSource, get_camera_source
 from apps.vision.models import CameraConfig, DetectionRun
 from apps.vision.serializers import (
 	CameraConfigSerializer,
@@ -164,7 +164,9 @@ class CameraPreviewAPIView(APIView):
 	"""GET /api/terminals/{terminal_id}/cameras/{camera_role}/preview/
 
 	Returns the current frame as a JPEG image response.
-	React can use this as: <img src="...preview/" />
+	Used for mock/USB sources where the backend must proxy the frame.
+	For NETWORK sources, use the stream-url endpoint instead so the browser
+	can connect to the camera directly.
 	"""
 	permission_classes = [IsAuthenticated]
 
@@ -187,7 +189,12 @@ class CameraPreviewAPIView(APIView):
 		try:
 			source = get_camera_source(config)
 			frame_bytes = source.get_current_frame()
-			return HttpResponse(frame_bytes, content_type="image/jpeg")
+			response = HttpResponse(frame_bytes, content_type="image/jpeg")
+			# Prevent any caching so each request always returns a fresh frame.
+			response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+			response["Pragma"] = "no-cache"
+			response["Expires"] = "0"
+			return response
 		except CameraSourceError as exc:
 			return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 		except Exception as exc:
@@ -195,6 +202,57 @@ class CameraPreviewAPIView(APIView):
 				{"detail": f"Could not read camera frame: {exc}"},
 				status=status.HTTP_503_SERVICE_UNAVAILABLE,
 			)
+
+
+class CameraStreamInfoAPIView(APIView):
+	"""GET /api/terminals/{terminal_id}/cameras/{camera_role}/stream-info/
+
+	Returns information about how the frontend should display this camera.
+
+	For NETWORK sources this returns the direct stream URL so the browser can
+	connect to the camera without going through Django on every frame.  The
+	browser renders MJPEG streams natively in an <img> tag.
+
+	Response shape:
+	  {
+	    "source_type": "NETWORK" | "USB" | "MOCK_FOLDER",
+	    "stream_url": "http://..." | null,   // direct URL for NETWORK sources
+	    "use_direct_stream": true | false,   // true when frontend should use stream_url
+	  }
+	"""
+	permission_classes = [IsAuthenticated]
+
+	def get(self, request, terminal_id: str, camera_role: str):
+		role = _normalize_role(camera_role)
+		if role not in (CameraConfig.CameraRole.SKU, CameraConfig.CameraRole.WEIGHTED):
+			return Response(
+				{"detail": f"Unknown camera_role '{camera_role}'."},
+				status=status.HTTP_404_NOT_FOUND,
+			)
+
+		try:
+			config = CameraConfig.objects.get(terminal_id=terminal_id, camera_role=role)
+		except CameraConfig.DoesNotExist:
+			return Response(
+				{"detail": "Camera config not found."},
+				status=status.HTTP_404_NOT_FOUND,
+			)
+
+		is_network = config.source_type == CameraConfig.SourceType.NETWORK
+		stream_url = None
+		if is_network:
+			try:
+				source = get_camera_source(config)
+				if isinstance(source, NetworkCameraSource):
+					stream_url = source.get_stream_url()
+			except CameraSourceError:
+				pass
+
+		return Response({
+			"source_type": config.source_type,
+			"stream_url": stream_url,
+			"use_direct_stream": is_network and stream_url is not None,
+		})
 
 
 # ---------------------------------------------------------------------------
@@ -483,6 +541,7 @@ class VisionDetectAPIView(APIView):
 				"status": run.status,
 				"detections": detections,
 				"draft_items": draft_items,
+				"timing": result.timing,
 			},
 			status=status.HTTP_200_OK,
 		)

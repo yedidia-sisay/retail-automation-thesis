@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
 from decimal import Decimal
 
 from django.db import transaction
@@ -18,6 +19,9 @@ from apps.vision.yolo_client import YOLOClient
 class DetectionResult:
 	detection_run: DetectionRun
 	draft_items: list
+	# Timing breakdown in milliseconds.  All values are wall-clock durations
+	# measured with time.perf_counter() on the Django process.
+	timing: dict = field(default_factory=dict)
 
 
 def _to_decimal(value, *, places: str) -> Decimal:
@@ -26,6 +30,9 @@ def _to_decimal(value, *, places: str) -> Decimal:
 
 def run_detection_for_checkout(*, checkout_session: CheckoutSession, image_file, user=None) -> DetectionResult:
 	"""Run YOLO detection for an editable checkout session and create draft items."""
+
+	# ── T0: overall start ──────────────────────────────────────────────────
+	t_total_start = time.perf_counter()
 
 	if not checkout_session.is_editable:
 		raise ValidationError({"detail": "This checkout session is not editable."})
@@ -39,7 +46,9 @@ def run_detection_for_checkout(*, checkout_session: CheckoutSession, image_file,
 		status=DetectionRun.Status.PENDING,
 	)
 
+	# ── Stage 1: YOLO inference (HTTP round-trip to yolo_service) ──────────
 	client = YOLOClient()
+	t_yolo_start = time.perf_counter()
 	try:
 		detections = client.detect_from_path(detection_run.image.path)
 	except Exception as exc:
@@ -55,6 +64,14 @@ def run_detection_for_checkout(*, checkout_session: CheckoutSession, image_file,
 			metadata={"detection_run_id": detection_run.id, "error": str(exc)},
 		)
 		raise ValidationError({"detail": "Vision detection failed.", "error": str(exc)})
+	t_yolo_end = time.perf_counter()
+
+	# ── Stage 2: detection post-processing + product lookup ────────────────
+	# These two stages are tightly coupled inside the same loop (each raw
+	# detection is immediately looked up in the DB).  We time them together
+	# as one pass and also accumulate the pure DB-lookup cost separately.
+	t_postprocess_start = time.perf_counter()
+	t_product_lookup_accumulated = 0.0
 
 	objects_to_create: list[DetectedObject] = []
 	unknown_count = 0
@@ -81,7 +98,11 @@ def run_detection_for_checkout(*, checkout_session: CheckoutSession, image_file,
 			bbox_x2 = _to_decimal(bbox_list[2], places="0.01")
 			bbox_y2 = _to_decimal(bbox_list[3], places="0.01")
 
+		# ── product lookup (DB) ────────────────────────────────────────────
+		_t_lookup = time.perf_counter()
 		mapped = get_product_for_detection_class(class_name)
+		t_product_lookup_accumulated += time.perf_counter() - _t_lookup
+
 		matched_product = None
 		minimum_confidence = default_mapping_threshold
 		if mapped is not None:
@@ -136,6 +157,10 @@ def run_detection_for_checkout(*, checkout_session: CheckoutSession, image_file,
 			)
 		)
 
+	t_postprocess_end = time.perf_counter()
+
+	# ── Stage 3: DB write + draft item (receipt) aggregation ───────────────
+	t_receipt_start = time.perf_counter()
 	try:
 		with transaction.atomic():
 			# Store the detection output and objects.
@@ -162,6 +187,29 @@ def run_detection_for_checkout(*, checkout_session: CheckoutSession, image_file,
 		detection_run.error_message = str(exc)
 		detection_run.save(update_fields=["status", "error_message", "updated_at"])
 		raise ValidationError({"detail": "Failed to store detection results.", "error": str(exc)})
+	t_receipt_end = time.perf_counter()
+
+	# ── T_end: overall end ─────────────────────────────────────────────────
+	t_total_end = time.perf_counter()
+
+	def _ms(start: float, end: float) -> float:
+		return round((end - start) * 1000.0, 3)
+
+	timing = {
+		# Round-trip HTTP POST to yolo_service (includes network + model inference).
+		# When USE_MOCK_YOLO=True this is just the mock function call overhead.
+		"yolo_inference_ms": _ms(t_yolo_start, t_yolo_end),
+		# Iterating raw detections, parsing bboxes, confidence filtering.
+		# Excludes the DB lookup cost (tracked separately below).
+		"postprocess_ms": _ms(t_postprocess_start, t_postprocess_end) - round(t_product_lookup_accumulated * 1000.0, 3),
+		# Accumulated time spent in get_product_for_detection_class() DB queries.
+		"product_lookup_ms": round(t_product_lookup_accumulated * 1000.0, 3),
+		# bulk_create DetectedObjects + add_detection_results_to_checkout (draft items).
+		"receipt_build_ms": _ms(t_receipt_start, t_receipt_end),
+		# Wall-clock time from function entry to return (includes all stages above
+		# plus Django ORM overhead for DetectionRun.objects.create etc.).
+		"total_backend_ms": _ms(t_total_start, t_total_end),
+	}
 
 	log_audit_event(
 		user=user,
@@ -176,4 +224,4 @@ def run_detection_for_checkout(*, checkout_session: CheckoutSession, image_file,
 		},
 	)
 
-	return DetectionResult(detection_run=detection_run, draft_items=draft_items)
+	return DetectionResult(detection_run=detection_run, draft_items=draft_items, timing=timing)

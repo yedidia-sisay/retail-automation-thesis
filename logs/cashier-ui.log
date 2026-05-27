@@ -3,41 +3,7 @@
 > vite
 
 
-  VITE v8.0.11  ready in 400 ms
+  VITE v8.0.11  ready in 350 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: use --host to expose
-4:05:29 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx
-4:05:29 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx
-4:05:30 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx
-4:05:30 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx
-4:05:30 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx, /src/features/settings/pages/CameraSettingsPage.tsx
-4:05:30 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx, /src/features/settings/pages/CameraSettingsPage.tsx
-4:05:30 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx, /src/features/settings/pages/CameraSettingsPage.tsx
-4:05:30 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx
-4:05:30 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx
-4:05:30 PM [vite] (client) hmr update /src/index.css, /src/features/cashier/pages/CheckoutSessionPage.tsx
-4:05:31 PM [vite] http proxy error: /api/auth/me/
-Error: connect ECONNREFUSED 127.0.0.1:8000
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
-4:05:31 PM [vite] http proxy error: /api/auth/me/
-Error: connect ECONNREFUSED 127.0.0.1:8000
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
-4:05:31 PM [vite] http proxy error: /api/terminals/cashier-01/cameras/sku/settings/
-Error: connect ECONNREFUSED 127.0.0.1:8000
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
-4:05:31 PM [vite] http proxy error: /api/terminals/cashier-01/cameras/sku/settings/
-Error: connect ECONNREFUSED 127.0.0.1:8000
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
-4:05:31 PM [vite] http proxy error: /api/terminals/cashier-01/cameras/weighted/settings/
-Error: connect ECONNREFUSED 127.0.0.1:8000
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
-4:05:31 PM [vite] http proxy error: /api/terminals/cashier-01/cameras/weighted/settings/
-Error: connect ECONNREFUSED 127.0.0.1:8000
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
-4:05:31 PM [vite] http proxy error: /api/terminals/cashier-01/cameras/sku/preview/?t=0
-Error: connect ECONNREFUSED 127.0.0.1:8000
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)
-4:05:31 PM [vite] http proxy error: /api/terminals/cashier-01/cameras/weighted/preview/?t=0
-Error: connect ECONNREFUSED 127.0.0.1:8000
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16)

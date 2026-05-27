@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, useRef, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as checkoutApi from '../../../api/checkoutApi';
 import * as cameraApi from '../../../api/cameraApi';
@@ -141,16 +141,22 @@ export function CheckoutSessionPage() {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   // SKU camera state
-  const [skuPreviewKey, setSkuPreviewKey] = useState(0);
+  // Two alternating src slots so we can crossfade without flashing.
+  const [skuSlot, setSkuSlot] = useState<0 | 1>(0);
+  const [skuSrcs, setSkuSrcs] = useState<[string, string]>(['', '']);
   const [detectingSKU, setDetectingSKU] = useState(false);
   const [skuDetectError, setSkuDetectError] = useState<string | null>(null);
   const [lastSKUCount, setLastSKUCount] = useState<number | null>(null);
+  // null = not yet loaded, string = direct stream URL, false = use polling preview
+  const [skuStreamUrl, setSkuStreamUrl] = useState<string | null | false>(null);
 
-  // Weighted camera state
-  const [weightedPreviewKey, setWeightedPreviewKey] = useState(0);
+  // Weighted camera state — feed is intentionally kept black (no live preview)
   const [detectingWeighted, setDetectingWeighted] = useState(false);
   const [weightedDetectMsg, setWeightedDetectMsg] = useState<string | null>(null);
   const [weightedDetectError, setWeightedDetectError] = useState<string | null>(null);
+
+  // Polling interval ref — only used for non-NETWORK (mock/USB) sources
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Weighted item modal
   const [showWeightedModal, setShowWeightedModal] = useState(false);
@@ -178,6 +184,67 @@ export function CheckoutSessionPage() {
     return () => clearInterval(t);
   }, []);
 
+  // Fetch stream info for the SKU camera once on mount, then set up polling
+  // only if the source is not a direct-stream NETWORK camera.
+  // The weighted camera feed is intentionally kept black — no polling.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStreamInfo() {
+      try {
+        const skuInfo = await cameraApi.getStreamInfo(TERMINAL_ID, 'sku');
+        if (cancelled) return;
+
+        const skuDirect = skuInfo.use_direct_stream ? skuInfo.stream_url : false;
+        setSkuStreamUrl(skuDirect);
+
+        if (!skuInfo.use_direct_stream) {
+          // Seed the first frame immediately, then poll.
+          const firstSrc = `${cameraApi.previewUrl(TERMINAL_ID, 'sku')}?t=${Date.now()}`;
+          setSkuSrcs([firstSrc, firstSrc]);
+          pollingRef.current = setInterval(() => {
+            if (cancelled) return;
+            const nextSrc = `${cameraApi.previewUrl(TERMINAL_ID, 'sku')}?t=${Date.now()}`;
+            setSkuSlot((prev) => {
+              const next = prev === 0 ? 1 : 0;
+              setSkuSrcs((srcs) => {
+                const updated: [string, string] = [...srcs] as [string, string];
+                updated[next] = nextSrc;
+                return updated;
+              });
+              return next;
+            });
+          }, 800);
+        }
+      } catch {
+        if (cancelled) return;
+        // Stream info unavailable — fall back to polling preview
+        setSkuStreamUrl(false);
+        const firstSrc = `${cameraApi.previewUrl(TERMINAL_ID, 'sku')}?t=${Date.now()}`;
+        setSkuSrcs([firstSrc, firstSrc]);
+        pollingRef.current = setInterval(() => {
+          if (cancelled) return;
+          const nextSrc = `${cameraApi.previewUrl(TERMINAL_ID, 'sku')}?t=${Date.now()}`;
+          setSkuSlot((prev) => {
+            const next = prev === 0 ? 1 : 0;
+            setSkuSrcs((srcs) => {
+              const updated: [string, string] = [...srcs] as [string, string];
+              updated[next] = nextSrc;
+              return updated;
+            });
+            return next;
+          });
+        }, 800);
+      }
+    }
+
+    loadStreamInfo();
+    return () => {
+      cancelled = true;
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     if (!sessionId) return;
     setLoading(true);
@@ -196,7 +263,17 @@ export function CheckoutSessionPage() {
     try {
       const result = await cameraApi.detectSKUFrame(TERMINAL_ID, Number(sessionId));
       setLastSKUCount(result.draft_items.length);
-      setSkuPreviewKey((k) => k + 1); // refresh preview after detection
+      // Refresh the preview after detection using the double-buffer approach.
+      const nextSrc = `${cameraApi.previewUrl(TERMINAL_ID, 'sku')}?t=${Date.now()}`;
+      setSkuSlot((prev) => {
+        const next = prev === 0 ? 1 : 0;
+        setSkuSrcs((srcs) => {
+          const updated: [string, string] = [...srcs] as [string, string];
+          updated[next] = nextSrc;
+          return updated;
+        });
+        return next;
+      });
       const updated = await checkoutApi.getSession(Number(sessionId));
       setSession(updated);
     } catch (err: unknown) {
@@ -216,7 +293,6 @@ export function CheckoutSessionPage() {
     setWeightedDetectError(null);
     try {
       const result = await cameraApi.detectWeightedFrame(TERMINAL_ID, Number(sessionId));
-      setWeightedPreviewKey((k) => k + 1);
       setWeightedDetectMsg(result.message);
       // If weighted detection returns a product in the future, open the modal pre-filled.
       // For now, prompt the cashier to enter weight manually.
@@ -361,7 +437,7 @@ export function CheckoutSessionPage() {
       <header className="fixed left-0 right-0 top-0 z-40 flex items-center justify-between border-b border-[#e7bdb7] bg-[#fff8f7] px-6 py-3 shadow-sm">
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
-            <span className="text-2xl font-black tracking-tight text-[#bb0010]">VisionPOS AI</span>
+            <span className="text-2xl font-black tracking-tight text-[#bb0010]">VisionPOS</span>
             <span className="text-[11px] font-bold uppercase tracking-widest text-[#5d3f3c]">Session #{session?.id ?? '—'}</span>
           </div>
           <div className="mx-2 h-8 w-px bg-[#e7bdb7]" />
@@ -394,25 +470,43 @@ export function CheckoutSessionPage() {
       <main className="mt-[64px] grid h-[calc(100vh-64px)] grid-cols-12 gap-4 overflow-hidden p-4">
 
         {/* LEFT: Camera Feeds */}
-        <section className="col-span-3 flex h-full flex-col gap-4 overflow-y-auto">
+        <section className="col-span-4 flex h-full flex-col gap-4 overflow-y-auto">
 
           {/* SKU / Packaged product camera panel */}
-          <div className="flex flex-col gap-2 rounded-xl border border-[#e7bdb7] bg-white p-3 shadow-sm">
+          <div className="flex flex-col gap-3 rounded-xl border border-[#e7bdb7] bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#ab332c]">Packaged Product Feed</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#ab332c]">Packaged Product Feed</span>
               <span className="animate-pulse rounded bg-red-500 px-2 py-0.5 text-[9px] font-bold uppercase text-white">Live</span>
             </div>
 
-            {/* Backend-driven preview */}
-            <div className="relative flex h-36 items-center justify-center overflow-hidden rounded-lg bg-black">
-              <img
-                key={skuPreviewKey}
-                src={`${cameraApi.previewUrl(TERMINAL_ID, 'sku')}?t=${skuPreviewKey}`}
-                alt="SKU camera preview"
-                className="h-full w-full object-contain"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-              {/* Fallback when no image loads */}
+            {/* Camera preview — direct MJPEG stream for NETWORK, polled snapshot for others */}
+            <div className="relative flex h-56 items-center justify-center overflow-hidden rounded-lg bg-black">
+              {skuStreamUrl ? (
+                /* NETWORK source: browser connects directly to the camera stream */
+                <img
+                  src={skuStreamUrl}
+                  alt="SKU camera live feed"
+                  className="h-full w-full object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : (
+                /* Mock/USB source: two overlapping images crossfade to avoid flash */
+                <>
+                  <img
+                    src={skuSrcs[0]}
+                    alt="SKU camera preview"
+                    className="absolute inset-0 h-full w-full object-contain transition-opacity duration-300"
+                    style={{ opacity: skuSlot === 0 ? 1 : 0 }}
+                  />
+                  <img
+                    src={skuSrcs[1]}
+                    alt="SKU camera preview"
+                    className="absolute inset-0 h-full w-full object-contain transition-opacity duration-300"
+                    style={{ opacity: skuSlot === 1 ? 1 : 0 }}
+                  />
+                </>
+              )}
+              {/* Fallback overlay when no image loads */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <div className="text-3xl opacity-20">📦</div>
                 <p className="mt-1 text-[10px] text-gray-400 opacity-60">Camera feed</p>
@@ -437,41 +531,47 @@ export function CheckoutSessionPage() {
               <p className="text-center text-[11px] text-red-600">{skuDetectError}</p>
             )}
 
-            {/* Action buttons */}
+            {/* Action buttons — Refresh only shown for non-NETWORK sources */}
             <div className="flex gap-2">
-              <button
-                onClick={() => setSkuPreviewKey((k) => k + 1)}
-                disabled={!isEditable}
-                className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[#bb0010] py-2 text-[11px] font-bold text-[#bb0010] hover:bg-red-50 disabled:opacity-40"
-              >
-                ↻ Refresh
-              </button>
+              {!skuStreamUrl && (
+                <button
+                  onClick={() => {
+                    const nextSrc = `${cameraApi.previewUrl(TERMINAL_ID, 'sku')}?t=${Date.now()}`;
+                    setSkuSlot((prev) => {
+                      const next = prev === 0 ? 1 : 0;
+                      setSkuSrcs((srcs) => {
+                        const updated: [string, string] = [...srcs] as [string, string];
+                        updated[next] = nextSrc;
+                        return updated;
+                      });
+                      return next;
+                    });
+                  }}
+                  disabled={!isEditable}
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[#bb0010] py-2 text-[11px] font-bold text-[#bb0010] hover:bg-red-50 disabled:opacity-40"
+                >
+                  ↻ Refresh
+                </button>
+              )}
               <button
                 onClick={handleDetectSKU}
                 disabled={!isEditable || detectingSKU}
                 className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 py-2 text-[11px] font-bold text-white hover:brightness-110 disabled:opacity-40"
               >
-                {detectingSKU ? '…' : '🔍 Detect'}
+                {detectingSKU ? '…' : '📸 Capture & Detect'}
               </button>
             </div>
           </div>
 
           {/* Weighted scale camera panel */}
-          <div className="flex flex-col gap-2 rounded-xl border border-[#e7bdb7] bg-white p-3 shadow-sm">
+          <div className="flex flex-col gap-3 rounded-xl border border-[#e7bdb7] bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#ab332c]">Weighted Scale Feed</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#ab332c]">Weighted Scale Feed</span>
               <span className="rounded bg-sky-100 px-2 py-0.5 text-[9px] font-bold uppercase text-sky-700">Scale</span>
             </div>
 
-            {/* Backend-driven preview */}
-            <div className="relative flex h-28 items-center justify-center overflow-hidden rounded-lg bg-black">
-              <img
-                key={weightedPreviewKey}
-                src={`${cameraApi.previewUrl(TERMINAL_ID, 'weighted')}?t=${weightedPreviewKey}`}
-                alt="Weighted camera preview"
-                className="h-full w-full object-contain"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
+            {/* Camera preview — intentionally kept black, no live feed */}
+            <div className="relative flex h-48 items-center justify-center overflow-hidden rounded-lg bg-black">
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <div className="text-3xl opacity-20">⚖️</div>
                 <p className="mt-1 text-[10px] text-gray-400 opacity-60">Scale feed</p>
@@ -501,7 +601,7 @@ export function CheckoutSessionPage() {
                 disabled={!isEditable || detectingWeighted}
                 className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-sky-600 py-2 text-[11px] font-bold text-white hover:brightness-110 disabled:opacity-40"
               >
-                {detectingWeighted ? '…' : '📷 Detect Weight'}
+                {detectingWeighted ? '…' : '📸 Capture Weight'}
               </button>
               <button
                 onClick={() => setShowWeightedModal(true)}
@@ -515,7 +615,7 @@ export function CheckoutSessionPage() {
         </section>
 
         {/* MIDDLE: Review & Correction */}
-        <section className="col-span-6 flex h-full flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar">
+        <section className="col-span-5 flex h-full flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar">
           {pageError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{pageError}</div>
           )}

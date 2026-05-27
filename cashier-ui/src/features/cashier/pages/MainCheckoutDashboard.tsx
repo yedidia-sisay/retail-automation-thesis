@@ -41,7 +41,7 @@ export function MainCheckoutDashboard() {
       {/* Header */}
       <header className="flex items-center justify-between border-b border-[#e7bdb7] bg-[#fff8f7] px-6 py-3 shadow-sm">
         <div className="flex items-center gap-4">
-          <span className="text-2xl font-black tracking-tight text-[#bb0010]">VisionPOS AI</span>
+          <span className="text-2xl font-black tracking-tight text-[#bb0010]">VisionPOS</span>
           <div className="h-6 w-px bg-[#e7bdb7]" />
           <div className="flex flex-col">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#ab332c]">Cashier</span>

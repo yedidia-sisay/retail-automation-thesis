@@ -1,163 +1,59 @@
 Watching for file changes with StatReloader
-[24/May/2026 15:48:22] "GET /api/auth/me/ HTTP/1.1" 200 139
-[24/May/2026 15:48:22] "GET /api/auth/me/ HTTP/1.1" 200 139
-[24/May/2026 15:48:27] "GET /api/auth/me/ HTTP/1.1" 200 139
-[24/May/2026 15:48:27] "GET /api/auth/me/ HTTP/1.1" 200 139
-[24/May/2026 15:48:32] "POST /api/auth/logout/ HTTP/1.1" 200 37
-[24/May/2026 15:49:03] "POST /api/auth/login/ HTTP/1.1" 200 139
-[24/May/2026 15:49:06] "POST /api/checkout/sessions/ HTTP/1.1" 201 312
-[24/May/2026 15:49:06] "GET /api/checkout/sessions/51/ HTTP/1.1" 200 312
-[24/May/2026 15:49:06] "GET /api/checkout/sessions/51/ HTTP/1.1" 200 312
+[tcp @ 0x7532e82c6440] Connection to tcp://10.160.146.119:8080 failed: Connection refused
 Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
-Service Unavailable: /api/terminals/cashier-01/cameras/weighted/preview/
-[24/May/2026 15:49:06] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=0 HTTP/1.1" 503 63
-[24/May/2026 15:49:06] "GET /api/terminals/cashier-01/cameras/weighted/preview/?t=0 HTTP/1.1" 503 63
-Internal Server Error: /api/terminals/cashier-01/vision/detect-sku-frame/
-Traceback (most recent call last):
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
-    response = get_response(request)
-               ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
-    return view_func(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 105, in view
-    return self.dispatch(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
-    response = self.handle_exception(exc)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
-    self.raise_uncaught_exception(exc)
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
-    raise exc
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
-    response = handler(request, *args, **kwargs)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/apps/vision/views.py", line 326, in post
-    frame_bytes = source.get_current_frame(config)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/apps/vision/camera_sources.py", line 154, in get_current_frame
-    import cv2 as _cv2_check  # noqa: F401 — checked inside _open_capture
-    ^^^^^^^^^^^^^^^^^^^^^^^^
-ModuleNotFoundError: No module named 'cv2'
-[24/May/2026 15:52:39] "POST /api/terminals/cashier-01/vision/detect-sku-frame/ HTTP/1.1" 500 108082
-Internal Server Error: /api/terminals/cashier-01/vision/detect-sku-frame/
-Traceback (most recent call last):
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
-    response = get_response(request)
-               ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
-    return view_func(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 105, in view
-    return self.dispatch(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
-    response = self.handle_exception(exc)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
-    self.raise_uncaught_exception(exc)
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
-    raise exc
-  File "/home/geracha/code/thesis/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
-    response = handler(request, *args, **kwargs)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/apps/vision/views.py", line 326, in post
-    frame_bytes = source.get_current_frame(config)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/geracha/code/thesis/backend/apps/vision/camera_sources.py", line 154, in get_current_frame
-    import cv2 as _cv2_check  # noqa: F401 — checked inside _open_capture
-    ^^^^^^^^^^^^^^^^^^^^^^^^
-ModuleNotFoundError: No module named 'cv2'
-[24/May/2026 15:52:42] "POST /api/terminals/cashier-01/vision/detect-sku-frame/ HTTP/1.1" 500 108082
-[24/May/2026 15:52:46] "GET /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 307
-[24/May/2026 15:52:46] "GET /api/terminals/cashier-01/cameras/weighted/settings/ HTTP/1.1" 200 317
-[24/May/2026 15:52:46] "GET /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 307
-[24/May/2026 15:52:46] "GET /api/terminals/cashier-01/cameras/weighted/settings/ HTTP/1.1" 200 317
+[27/May/2026 21:06:57] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905217370 HTTP/1.1" 503 132
+[tcp @ 0x7532e803a080] Connection to tcp://10.160.146.119:8080 failed: Connection refused
 Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
-[24/May/2026 15:52:46] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=0 HTTP/1.1" 503 63
-Service Unavailable: /api/terminals/cashier-01/cameras/weighted/preview/
-[24/May/2026 15:52:46] "GET /api/terminals/cashier-01/cameras/weighted/preview/?t=0 HTTP/1.1" 503 63
-[24/May/2026 15:56:05] "POST /api/terminals/cashier-01/cameras/sku/test/ HTTP/1.1" 200 64
-[24/May/2026 16:02:33] "POST /api/terminals/cashier-01/cameras/sku/test/ HTTP/1.1" 200 148
-[24/May/2026 16:02:41] "PATCH /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 306
-[http @ 0x75228c162cc0] Stream ends prematurely at 40812, should be 18446744073709551615
-[http @ 0x75228c162cc0] Stream ends prematurely at 40812, should be 18446744073709551615
+[27/May/2026 21:06:58] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905218370 HTTP/1.1" 503 132
+[tcp @ 0x7532e8034340] Connection to tcp://10.160.146.119:8080 failed: Connection refused
 Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
-[24/May/2026 16:02:41] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1 HTTP/1.1" 503 124
-[http @ 0x75228c2076c0] Stream ends prematurely at 40812, should be 18446744073709551615
-[http @ 0x75228c2076c0] Stream ends prematurely at 40812, should be 18446744073709551615
-[24/May/2026 16:02:43] "POST /api/terminals/cashier-01/cameras/sku/test/ HTTP/1.1" 200 136
-[http @ 0x75228c318480] Stream ends prematurely at 40812, should be 18446744073709551615
-[http @ 0x75228c318480] Stream ends prematurely at 40812, should be 18446744073709551615
+[27/May/2026 21:06:59] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905219370 HTTP/1.1" 503 132
+[tcp @ 0x7532e8207000] Connection to tcp://10.160.146.119:8080 failed: Connection refused
 Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
-[24/May/2026 16:02:45] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=2 HTTP/1.1" 503 124
-[http @ 0x75228c08a680] Stream ends prematurely at 40812, should be 18446744073709551615
-[http @ 0x75228c08a680] Stream ends prematurely at 40812, should be 18446744073709551615
+[27/May/2026 21:07:00] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905220371 HTTP/1.1" 503 132
+[tcp @ 0x7532e803bc80] Connection to tcp://10.160.146.119:8080 failed: Connection refused
 Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
-[24/May/2026 16:02:47] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=3 HTTP/1.1" 503 124
-[24/May/2026 16:03:39] "PATCH /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 306
-[http @ 0x75228c08a680] Stream ends prematurely at 40812, should be 18446744073709551615
-[http @ 0x75228c08a680] Stream ends prematurely at 40812, should be 18446744073709551615
+[27/May/2026 21:07:01] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905221387 HTTP/1.1" 503 132
+[tcp @ 0x7532e82bf340] Connection to tcp://10.160.146.119:8080 failed: Connection refused
 Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
-[24/May/2026 16:03:39] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=4 HTTP/1.1" 503 124
-[http @ 0x75228c318480] Stream ends prematurely at 40812, should be 18446744073709551615
-[http @ 0x75228c318480] Stream ends prematurely at 40812, should be 18446744073709551615
-[24/May/2026 16:03:41] "POST /api/terminals/cashier-01/cameras/sku/test/ HTTP/1.1" 200 136
-[http @ 0x75228c001c80] Stream ends prematurely at 40812, should be 18446744073709551615
-[http @ 0x75228c001c80] Stream ends prematurely at 40812, should be 18446744073709551615
-[24/May/2026 16:03:45] "POST /api/terminals/cashier-01/cameras/sku/test/ HTTP/1.1" 200 136
-/home/geracha/code/thesis/backend/apps/vision/camera_sources.py changed, reloading.
-Performing system checks...
-
-System check identified no issues (0 silenced).
-May 24, 2026 - 15:44:16
-Django version 5.2.13, using settings 'config.settings'
-Starting development server at http://0.0.0.0:8000/
-Quit the server with CONTROL-C.
-
-WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
-For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
-Watching for file changes with StatReloader
-/home/geracha/code/thesis/backend/apps/vision/services.py changed, reloading.
-Performing system checks...
-
-System check identified no issues (0 silenced).
-May 24, 2026 - 16:05:30
-Django version 5.2.13, using settings 'config.settings'
-Starting development server at http://0.0.0.0:8000/
-Quit the server with CONTROL-C.
-
-WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
-For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
-Watching for file changes with StatReloader
-Bad Request: /api/terminals/cashier-01/cameras/sku/settings/
-[24/May/2026 16:05:44] "PATCH /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 400 86
-[24/May/2026 16:06:05] "GET /api/auth/me/ HTTP/1.1" 200 139
-[24/May/2026 16:06:05] "GET /api/auth/me/ HTTP/1.1" 200 139
-[24/May/2026 16:06:05] "GET /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 306
-[24/May/2026 16:06:05] "GET /api/terminals/cashier-01/cameras/weighted/settings/ HTTP/1.1" 200 317
-[24/May/2026 16:06:05] "GET /api/terminals/cashier-01/cameras/weighted/settings/ HTTP/1.1" 200 317
-[24/May/2026 16:06:05] "GET /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 306
-Service Unavailable: /api/terminals/cashier-01/cameras/weighted/preview/
-[24/May/2026 16:06:06] "GET /api/terminals/cashier-01/cameras/weighted/preview/?t=0 HTTP/1.1" 503 44
-[http @ 0x70bff82a2780] Stream ends prematurely at 40812, should be 18446744073709551615
-[http @ 0x70bff82a2780] Stream ends prematurely at 40812, should be 18446744073709551615
+[27/May/2026 21:07:02] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1779905222405 HTTP/1.1" 503 132
+[27/May/2026 21:07:03] "GET /api/auth/me/ HTTP/1.1" 200 139
+[27/May/2026 21:07:03] "GET /api/auth/me/ HTTP/1.1" 200 139
+[27/May/2026 21:07:03] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:07:03] "GET /api/checkout/sessions/154/ HTTP/1.1" 200 313
+[27/May/2026 21:07:03] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:07:03] "GET /api/checkout/sessions/154/ HTTP/1.1" 200 313
+[27/May/2026 21:07:06] "POST /api/auth/logout/ HTTP/1.1" 200 37
+[27/May/2026 21:07:08] "POST /api/auth/login/ HTTP/1.1" 200 139
+[27/May/2026 21:07:29] "POST /api/checkout/sessions/ HTTP/1.1" 201 313
+[27/May/2026 21:07:29] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:07:29] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 313
+[27/May/2026 21:07:29] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:07:29] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 313
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 334
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/weighted/settings/ HTTP/1.1" 200 338
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 334
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/weighted/settings/ HTTP/1.1" 200 338
+[tcp @ 0x7532e8042380] Connection to tcp://10.160.146.119:8080 failed: Connection refused
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/weighted/preview/?t=0 HTTP/1.1" 200 3229479
 Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
-[24/May/2026 16:06:06] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=0 HTTP/1.1" 503 124
-[24/May/2026 16:06:09] "GET /api/checkout/sessions/51/ HTTP/1.1" 200 312
-[24/May/2026 16:06:09] "GET /api/checkout/sessions/51/ HTTP/1.1" 200 312
-Service Unavailable: /api/terminals/cashier-01/cameras/weighted/preview/
-[24/May/2026 16:06:09] "GET /api/terminals/cashier-01/cameras/weighted/preview/?t=0 HTTP/1.1" 503 44
-[http @ 0x70bff8015240] Stream ends prematurely at 40812, should be 18446744073709551615
-[http @ 0x70bff8015240] Stream ends prematurely at 40812, should be 18446744073709551615
-Service Unavailable: /api/terminals/cashier-01/cameras/sku/preview/
-[24/May/2026 16:06:09] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=0 HTTP/1.1" 503 124
-[24/May/2026 16:06:14] "POST /api/checkout/sessions/51/cancel/ HTTP/1.1" 200 347
-[24/May/2026 16:06:15] "POST /api/auth/logout/ HTTP/1.1" 200 37
+[27/May/2026 21:07:34] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=0 HTTP/1.1" 503 132
+[27/May/2026 21:09:18] "PATCH /api/terminals/cashier-01/cameras/sku/settings/ HTTP/1.1" 200 367
+[27/May/2026 21:09:18] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=1 HTTP/1.1" 200 33302
+[27/May/2026 21:09:21] "POST /api/terminals/cashier-01/cameras/sku/test/ HTTP/1.1" 200 50
+[27/May/2026 21:09:21] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=2 HTTP/1.1" 200 33313
+[27/May/2026 21:09:33] "POST /api/terminals/cashier-01/cameras/sku/test/ HTTP/1.1" 200 50
+[27/May/2026 21:09:33] "GET /api/terminals/cashier-01/cameras/sku/preview/?t=3 HTTP/1.1" 200 89929
+[27/May/2026 21:09:37] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:09:38] "GET /api/terminals/cashier-01/cameras/sku/stream-info/ HTTP/1.1" 200 98
+[27/May/2026 21:09:38] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 313
+[27/May/2026 21:09:38] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 313
+[27/May/2026 21:09:49] "POST /api/terminals/cashier-01/vision/detect-sku-frame/ HTTP/1.1" 200 538
+[27/May/2026 21:09:49] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 735
+[27/May/2026 21:09:57] "POST /api/checkout/items/267/accept/ HTTP/1.1" 200 416
+[27/May/2026 21:09:59] "POST /api/checkout/sessions/155/confirm/ HTTP/1.1" 200 460
+[27/May/2026 21:09:59] "GET /api/checkout/sessions/155/ HTTP/1.1" 200 768
+[27/May/2026 21:09:59] "GET /api/receipts/21/ HTTP/1.1" 200 460
+[27/May/2026 21:09:59] "GET /api/receipts/21/ HTTP/1.1" 200 460
+[27/May/2026 21:10:02] "POST /api/payments/simulate/ HTTP/1.1" 201 259
+[27/May/2026 21:10:02] "GET /api/receipts/21/ HTTP/1.1" 200 458

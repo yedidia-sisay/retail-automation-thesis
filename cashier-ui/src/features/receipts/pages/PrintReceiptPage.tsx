@@ -42,7 +42,7 @@ export function PrintReceiptPage() {
 
         {/* Receipt content */}
         <div className="space-y-1 text-center">
-          <p className="text-lg font-bold">VisionPOS AI</p>
+          <p className="text-lg font-bold">VisionPOS</p>
           <p className="text-xs text-gray-500">AI Retail Checkout System</p>
         </div>
 

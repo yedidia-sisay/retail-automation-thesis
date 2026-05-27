@@ -103,24 +103,16 @@ else
 fi
 
 info "Installing backend dependencies..."
-backend/.venv/bin/pip install --quiet --upgrade pip
-backend/.venv/bin/pip install --quiet -r backend/requirements.txt
+backend/.venv/bin/pip3 install --quiet --upgrade pip
+backend/.venv/bin/pip3 install --quiet -r backend/requirements.txt
 success "Backend dependencies installed."
 
 # ── 4. YOLO service Python venv ───────────────────────────────────────────────
 header "── YOLO service — Python venv ──────────────────────────────────────────"
 
-if [ ! -d "yolo_service/.venv" ]; then
-    info "Creating yolo_service/.venv..."
-    python3 -m venv yolo_service/.venv
-    success "Created yolo_service/.venv"
-else
-    info "yolo_service/.venv already exists."
-fi
-
-info "Installing YOLO service dependencies (this may take a while — ultralytics is large)..."
-yolo_service/.venv/bin/pip install --quiet --upgrade pip
-yolo_service/.venv/bin/pip install --quiet -r yolo_service/requirements.txt
+info "Installing YOLO service dependencies into root .venv (this may take a while — ultralytics is large)..."
+.venv/bin/pip3 install --quiet --upgrade pip
+.venv/bin/pip3 install --quiet -r yolo_service/requirements.txt
 success "YOLO service dependencies installed."
 
 # ── 5. YOLO weights check ─────────────────────────────────────────────────────

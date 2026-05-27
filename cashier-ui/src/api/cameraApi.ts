@@ -54,13 +54,37 @@ export async function testCamera(
 }
 
 /**
- * Returns the URL for the camera preview image.
+ * Returns the URL for the camera preview image (for mock/USB sources).
  * Use directly as <img src={previewUrl(...)} />.
  * The browser will send the session cookie automatically.
  */
 export function previewUrl(terminalId: string, role: 'sku' | 'weighted'): string {
   const apiBase = import.meta.env.VITE_API_BASE_URL ?? '';
   return `${apiBase}/api/terminals/${terminalId}/cameras/${role}/preview/`;
+}
+
+export interface StreamInfo {
+  source_type: 'MOCK_FOLDER' | 'USB' | 'NETWORK';
+  stream_url: string | null;
+  /** True when the frontend should point an <img> directly at stream_url */
+  use_direct_stream: boolean;
+}
+
+/**
+ * GET /api/terminals/{terminalId}/cameras/{role}/stream-info/
+ *
+ * Returns how the frontend should display this camera.
+ * For NETWORK sources, use stream_url directly in an <img> tag (MJPEG).
+ * For other sources, use the polling preview endpoint.
+ */
+export async function getStreamInfo(
+  terminalId: string,
+  role: 'sku' | 'weighted',
+): Promise<StreamInfo> {
+  const res = await apiClient.get<StreamInfo>(
+    `${base(terminalId)}/cameras/${role}/stream-info/`,
+  );
+  return res.data;
 }
 
 // ---------------------------------------------------------------------------

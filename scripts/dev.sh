@@ -39,8 +39,8 @@ if [ ! -f "backend/.venv/bin/python" ]; then
     error "backend/.venv not found. Run ./scripts/setup.sh first."
     exit 1
 fi
-if [ ! -f "yolo_service/.venv/bin/python" ]; then
-    error "yolo_service/.venv not found. Run ./scripts/setup.sh first."
+if [ ! -f ".venv/bin/uvicorn" ]; then
+    error ".venv/bin/uvicorn not found. Run ./scripts/setup.sh first."
     exit 1
 fi
 if [ ! -d "cashier-ui/node_modules" ]; then
@@ -110,7 +110,7 @@ success "Django started (PID ${PIDS[-1]})"
 info "Starting YOLO service → logs/yolo.log"
 (
     cd yolo_service
-    .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8061 --reload
+    ../.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8061 --reload
 ) > logs/yolo.log 2>&1 &
 PIDS+=($!)
 success "YOLO service started (PID ${PIDS[-1]})"

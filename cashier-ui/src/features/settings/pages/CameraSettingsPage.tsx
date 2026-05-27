@@ -41,6 +41,7 @@ function CameraPanel({ role, label, icon, terminalId }: CameraPanelProps) {
   const [mockFolderPath, setMockFolderPath] = useState('');
   const [usbDeviceIndex, setUsbDeviceIndex] = useState<string>('0');
   const [streamUrl, setStreamUrl] = useState('');
+  const [snapshotUrl, setSnapshotUrl] = useState('');
   const [frameIntervalMs, setFrameIntervalMs] = useState<string>('1000');
 
   useEffect(() => {
@@ -53,6 +54,7 @@ function CameraPanel({ role, label, icon, terminalId }: CameraPanelProps) {
         setMockFolderPath(cfg.mock_folder_path ?? '');
         setUsbDeviceIndex(String(cfg.usb_device_index ?? 0));
         setStreamUrl(cfg.stream_url ?? '');
+        setSnapshotUrl(cfg.snapshot_url ?? '');
         setFrameIntervalMs(String(cfg.frame_interval_ms ?? 1000));
       })
       .catch(() => setSaveError('Failed to load camera settings.'))
@@ -71,6 +73,7 @@ function CameraPanel({ role, label, icon, terminalId }: CameraPanelProps) {
       mock_folder_path: sourceType === 'MOCK_FOLDER' ? mockFolderPath : null,
       usb_device_index: sourceType === 'USB' ? parseInt(usbDeviceIndex, 10) : null,
       stream_url: sourceType === 'NETWORK' ? streamUrl : null,
+      snapshot_url: sourceType === 'NETWORK' ? (snapshotUrl.trim() || null) : null,
     };
 
     try {
@@ -194,20 +197,42 @@ function CameraPanel({ role, label, icon, terminalId }: CameraPanelProps) {
           )}
 
           {sourceType === 'NETWORK' && (
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#5d3f3c]">
-                Stream URL
-              </label>
-              <input
-                type="text"
-                value={streamUrl}
-                onChange={(e) => setStreamUrl(e.target.value)}
-                placeholder="rtsp://192.168.1.100:554/stream"
-                className="w-full rounded-lg border border-[#e7bdb7] bg-white px-3 py-2 font-mono text-sm focus:border-[#bb0010] focus:outline-none focus:ring-2 focus:ring-[#bb0010]/20"
-              />
-              <p className="mt-1 text-[11px] text-[#926f6a]">
-                RTSP or HTTP stream URL. Requires opencv-python on the server.
-              </p>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#5d3f3c]">
+                  Stream URL
+                </label>
+                <input
+                  type="text"
+                  value={streamUrl}
+                  onChange={(e) => setStreamUrl(e.target.value)}
+                  placeholder="http://192.168.1.100:8080/video"
+                  className="w-full rounded-lg border border-[#e7bdb7] bg-white px-3 py-2 font-mono text-sm focus:border-[#bb0010] focus:outline-none focus:ring-2 focus:ring-[#bb0010]/20"
+                />
+                <p className="mt-1 text-[11px] text-[#926f6a]">
+                  Used for the live preview in the browser (MJPEG or RTSP).{' '}
+                  Example: <span className="font-mono">http://10.99.99.144:8080/video</span>
+                </p>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#5d3f3c]">
+                  Snapshot URL{' '}
+                  <span className="font-normal normal-case text-[#926f6a]">(recommended for detection)</span>
+                </label>
+                <input
+                  type="text"
+                  value={snapshotUrl}
+                  onChange={(e) => setSnapshotUrl(e.target.value)}
+                  placeholder="http://192.168.1.100:8080/shot.jpg"
+                  className="w-full rounded-lg border border-[#e7bdb7] bg-white px-3 py-2 font-mono text-sm focus:border-[#bb0010] focus:outline-none focus:ring-2 focus:ring-[#bb0010]/20"
+                />
+                <p className="mt-1 text-[11px] text-[#926f6a]">
+                  Single-frame endpoint used when capturing for YOLO detection. Avoids stale
+                  buffered frames from the stream.{' '}
+                  <span className="font-semibold text-[#7a3a35]">IP Webcam app:</span>{' '}
+                  <span className="font-mono">http://10.99.99.144:8080/shot.jpg</span>
+                </p>
+              </div>
             </div>
           )}
 

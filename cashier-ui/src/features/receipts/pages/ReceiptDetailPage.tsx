@@ -107,7 +107,7 @@ export function ReceiptDetailPage() {
           <div className="border-b border-[#e7bdb7] bg-[#fff0ee] px-6 py-5">
             <div className="flex items-start justify-between">
               <div>
-                <h1 className="text-2xl font-black text-[#bb0010]">VisionPOS AI</h1>
+                <h1 className="text-2xl font-black text-[#bb0010]">VisionPOS</h1>
                 <p className="text-sm text-[#5d3f3c]">Receipt #{receipt.receipt_number}</p>
                 <p className="text-xs text-[#926f6a]">
                   {new Date(receipt.created_at).toLocaleString('en-US', {
